@@ -11,22 +11,40 @@ DispStr:
     mov    ax, 01301h        ; AH = 13,  AL = 01h
     mov    bx, 000ch         ; 页号为0(BH = 0) 黑底红字(BL = 0Ch,高亮)
     mov    dl, 0;
+    int    10h;
     mov    ah,06h;
     mov    al,0;
+    mov    ch,0;
+    mov    cl,0;
+    mov    dh,50h;
+    mov    dl,50h;
+    int    10h;
     mov    ah,02h;
     mov    dh,13h;
     mov    dl,26h;
+    mov    bh,0;
+    int    10h;
     mov    ax,BootMessage1
     mov    bp,ax;
     mov    ah,13h;
     mov    bx,00f9h;
     mov    cx,4;
+    int    10h;
     mov    ah,02h;
-    mov    al,0;
+    mov    dl,0;
+    mov    dh,0;
+    mov    dl,0;
+    int    10h;
+    mov    ax,M2
+    mov    bp,ax;
+    mov    cx,2;
+    mov    ax,01300h;
+    mov    bx,0004h;
     mov    dl,0;
     int    10h               ; 10h 号中断
     ret
 BootMessage:             db    "This is luoqiang's boot"
 BootMessage1:            db    "NWPU"
+M2:                      db    "    "
 times      510-($-$$)    db    0    ; 填充剩下的空间，使生成的二进制代码恰好为512字节
 dw         0xaa55                   ; 结束标志
