@@ -69,7 +69,7 @@ BufferPacket              times 010h db 0               ; ReadSector函数会用
 LoaderFileName            db    "LOADER  BIN", 0  ; LOADER.BIN 的文件名(为什么中间有空格请RTFM)
 ; 为简化代码, 下面每个字符串的长度均为 MessageLength
 MessageLength             equ    9
-BootMessage:              db    "Booting  "    ; 9字节, 不够则用空格补齐. 序号 0
+BootMessage:              db    "this is luoqiang's boot  "    ; 9字节, 不够则用空格补齐. 序号 0
 Message1                  db    "Ready.   "    ; 9字节, 不够则用空格补齐. 序号 1
 Message2                  db    "Read Fail"    ; 9字节, 不够则用空格补齐. 序号 2
 Message3                  db    "No Loader"    ; 9字节, 不够则用空格补齐. 序号 3
