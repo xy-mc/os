@@ -15,6 +15,7 @@ everything : $(BOOT_BIN) $(LDR_BIN)
 	@dd if=$(BOOT_BIN) of=a.img bs=512 count=1 conv=notrunc
 	@sudo mount -o loop a.img /mnt
 	@sudo cp $(LDR_BIN) /mnt -v
+	@sudo cp ./aA1.txt /mnt -v
 	@sudo umount /mnt
 
 clean :
