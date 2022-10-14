@@ -9,6 +9,7 @@ DESCRIPTOR gdt[GDT_SIZE];
 
 void cstart()
 {
+        cmatrix_start();
 	/* 将 LOADER 中的 GDT 复制到新的 GDT 中 */
 	memcpy(&gdt,					/* New GDT */
 	       (void *)(*((u32 *)(&gdt_ptr[2]))),	/* Base  of Old GDT */

@@ -1,0 +1,9 @@
+obj/kern/start.o: kern/start.c /usr/include/stdc-predef.h inc/type.h \
+ inc/protect.h inc/type.h inc/string.h inc/cmatrix.h inc/terminal.h
+obj/kern/string.o: lib/string.c /usr/include/stdc-predef.h inc/string.h \
+ inc/type.h
+obj/boot/loadkernel.o: boot/loadkernel.c /usr/include/stdc-predef.h
+obj/kern/cmatrix.o: kern/cmatrix.c /usr/include/stdc-predef.h inc/type.h \
+ inc/cmatrix.h inc/type.h inc/terminal.h
+obj/kern/terminal.o: lib/terminal.c /usr/include/stdc-predef.h \
+ inc/terminal.h inc/type.h inc/cmatrix.h
