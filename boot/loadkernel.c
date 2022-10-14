@@ -83,6 +83,38 @@ write_to_terminal(u16 disp_pos, u16 content)
 	    "mov %1, %%gs:(%0)" ::"r"(disp_pos * 2), "r"(content)
 	    : "memory");
 }
+char * itoa(char *str,int num)
+{
+       char *p=str;
+       char ch;
+       int i;
+       int flag=0;
+       *p++='0';
+       *p++='x';
+       if(num==0)
+       {
+        *p++='0';
+       }
+       else
+       {
+          for(i=28;i>=0;i-=4)
+         {
+               ch=(num>>i)&0xF;
+               if(flag||(ch>0))
+             {
+                   flag=1;
+       		   ch+='0';
+                   if(ch>'9')
+                     {
+                         ch+=7;
+                     }
+                *p++=ch;
+             }
+         }
+        }
+        *p=0;
+        return str;
+}
 
 /*
  * 清屏
@@ -141,12 +173,36 @@ load_kernel()
 	clear_screen();
 	for (char *s = "----start loading kernel elf----", *st = s; *s; s++)
 		write_to_terminal(s - st, DEFAULT_COLOR | *s);
-
+        clear_screen();
+        char output[16];
 	Elf32_Ehdr *kernel_ehdr = (Elf32_Ehdr *)KERNEL_ELF;
-
+        for (u8 *s = kernel_ehdr->e_ident, *st = s; *s; s++)
+		write_to_terminal(s - st, DEFAULT_COLOR | *s);
+        itoa(output,kernel_ehdr->e_machine);
+        for (char *s = output, *st = s; *s; s++)
+		write_to_terminal(80+s - st, DEFAULT_COLOR | *s);
+	itoa(output,kernel_ehdr->e_phentsize);
+        for (char *s = output, *st = s; *s; s++)
+		write_to_terminal(160+s - st, DEFAULT_COLOR | *s);
+	itoa(output,kernel_ehdr->e_phnum);
+        for (char *s = output, *st = s; *s; s++)
+		write_to_terminal(240+s - st, DEFAULT_COLOR | *s);
 	Elf32_Phdr *kernel_phdr = (void *)kernel_ehdr + kernel_ehdr->e_phoff;
+	int t=320;
 	for (u32 i = 0; i < kernel_ehdr->e_phnum; i++, kernel_phdr++)
 	{
+	    itoa(output,kernel_phdr->p_vaddr);
+        for (char *s = output, *st = s; *s; s++)
+		write_to_terminal(t+s - st, DEFAULT_COLOR | *s);
+	t+=80;
+            itoa(output,kernel_phdr->p_memsz);
+        for (char *s = output, *st = s; *s; s++)
+		write_to_terminal(t+s - st, DEFAULT_COLOR | *s);
+	t+=80;
+            itoa(output,kernel_phdr->p_flags);
+        for (char *s = output, *st = s; *s; s++)
+		write_to_terminal(t+s - st, DEFAULT_COLOR | *s);
+	t+=80;
 		if (kernel_phdr->p_type != PT_LOAD)
 			continue;
 		// 将elf的文件数据复制到指定位置
