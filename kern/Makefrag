@@ -1,0 +1,42 @@
+#
+# makefile的kernel部分，
+# 将会导入到根目录的makefile文件
+#
+
+OBJDIRS 	+= kern
+
+KERN_ENTRY	:= 0x30400
+
+# kernel的所有源码文件，如果要添加什么新文件就只需要在这里添加即可，其余makefile都不需要动
+KERN_SRCFEILS:=	kern/kernel.asm	\
+		kern/start.c	\
+		kern/cmatrix.c	\
+		kern/kprintf.asm\
+		lib/terminal.c	\
+		lib/string.c	
+
+# 根据KERN_SRCFEILS获取所有需要的可重定位文件
+KERN_OBJFILES	:= $(patsubst %.c, $(OBJDIR)/%.o, $(KERN_SRCFEILS))
+KERN_OBJFILES	:= $(patsubst %.asm, $(OBJDIR)/%.o, $(KERN_OBJFILES))
+KERN_OBJFILES	:= $(patsubst $(OBJDIR)/lib/%, $(OBJDIR)/kern/%, $(KERN_OBJFILES))
+
+# 根据源文件pattern判断编译的方式
+$(OBJDIR)/kern/%.o: kern/%.c $(OBJDIR)/.vars.CFLAGS
+	@echo + cc $<
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/kern/%.o: lib/%.c $(OBJDIR)/.vars.CFLAGS
+	@echo + cc $<
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/kern/%.o: kern/%.asm $(OBJDIR)/.vars.CFLAGS
+	@echo + as obj $<
+	@mkdir -p $(@D)
+	@$(AS) -f elf -o $@ $<
+
+# 将所有可重定位文件链接成kernel.bin
+$(OBJDIR)/kern/kernel.bin: $(KERN_OBJFILES)
+	@echo + ld $@
+	@$(LD) $(LDFLAGS) -Ttext $(KERN_ENTRY) -o $@ $^

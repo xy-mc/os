@@ -1,0 +1,31 @@
+#
+# makefile的boot部分，
+# 将会导入到根目录的makefile文件
+#
+
+OBJDIRS 	+= boot
+
+LOADER_OBJS	:= $(OBJDIR)/boot/loader.o $(OBJDIR)/boot/loadkernel.o
+LOADER_LINKER	:= boot/linker.ld
+
+# 根据源文件pattern判断编译的方式
+$(OBJDIR)/boot/%.o: boot/%.c
+	@echo + cc $<
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -fno-pie -c -o $@ $<
+
+$(OBJDIR)/boot/%.o: boot/%.asm
+	@echo + as obj $<
+	@mkdir -p $(@D)
+	@$(AS) -f elf -o $@ $<
+
+# 对于boot，它是特殊的，需要特殊编译
+$(OBJDIR)/boot/boot.bin: boot/boot.asm
+	@echo + as bin $<
+	@mkdir -p $(@D)
+	@$(AS) -o $@ $<
+# loader通过一个特定的脚本进行链接，反正可以先不管，将核心放到内核代码上来
+$(OBJDIR)/boot/loader.bin: $(LOADER_OBJS) $(LOADER_LINKER)
+	@echo + ld $@
+	@mkdir -p $(@D)
+	@$(LD) $(LDFLAGS) -s -T $(LOADER_LINKER) --oformat binary -o $@ $(LOADER_OBJS)
