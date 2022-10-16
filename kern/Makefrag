@@ -1,0 +1,50 @@
+#
+# makefile的kernel部分，
+# 将会导入到根目录的makefile文件
+#
+
+OBJDIRS 	+= kern
+
+KERN_ENTRY_ADDR	:= 0x200000
+KERN_SRCFILES:=	kern/astart.asm	\
+		kern/atrap.asm	\
+		kern/keyboard.c	\
+		kern/main.c	\
+		kern/start.c	\
+		kern/time.c	\
+		kern/trap.c	\
+		lib/libch4Core.a\
+		lib/terminal.c	\
+		lib/printfmt.c	\
+		lib/string.c	
+
+KERN_OBJFILES	:= $(patsubst %.c, $(OBJDIR)/%.o, $(KERN_SRCFILES))
+KERN_OBJFILES	:= $(patsubst %.asm, $(OBJDIR)/%.o, $(KERN_OBJFILES))
+KERN_OBJFILES	:= $(patsubst $(OBJDIR)/lib/%, $(OBJDIR)/kern/%, $(KERN_OBJFILES))
+
+$(OBJDIR)/kern/%.o: kern/%.c $(OBJDIR)/.vars.CFLAGS
+	@echo + cc $<
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/kern/%.o: lib/%.c $(OBJDIR)/.vars.CFLAGS
+	@echo + cc $<
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/kern/%.o: kern/%.asm $(OBJDIR)/.vars.CFLAGS
+	@echo + as obj $<
+	@mkdir -p $(@D)
+	@$(AS) -f elf -o $@ $<
+
+$(OBJDIR)/kern/%.a: lib/%.a $(OBJDIR)/.vars.CFLAGS
+	@echo + cp lib $<
+	@mkdir -p $(@D)
+	@cp $< $(@D)
+
+$(OBJDIR)/kern/kernel.bin: $(KERN_OBJFILES) $(OBJDIR)/.vars.LDFLAGS
+	@echo + ld $@
+	@$(LD) $(LDFLAGS) -s -Ttext $(KERN_ENTRY_ADDR) -o $@ $(KERN_OBJFILES) $(GCC_LIB)
+	@$(LD) $(LDFLAGS) -Ttext $(KERN_ENTRY_ADDR) -o $(OBJDIR)/kern/kernel.dbg $(KERN_OBJFILES) $(GCC_LIB)
+
+all: $(OBJDIR)/kern/a.img
