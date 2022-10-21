@@ -5,6 +5,14 @@
 #include "trap.h"
 #include "x86.h"
 
+struct Pseudodesc gdt_ptr, idt_ptr;
+
+DESCRIPTOR	gdt[GDT_SIZE];
+DESCRIPTOR	ldt[LDT_SIZE];
+GATE		idt[IDT_SIZE];
+
+TSS tss;
+
 /*
  * 当发生不可挽回的错误时就打印错误信息并使CPU核休眠
  */

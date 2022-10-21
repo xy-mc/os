@@ -23,7 +23,16 @@ static KB_INPUT kb_input = {
 void
 add_keyboard_buf(u8 ch)
 {
+ 	if (kb_input.count < KB_INBUF_SIZE) {
+ 	*(kb_input.p_head) = ch;
+ 	kb_input.p_head++;
+ 	if (kb_input.p_head == kb_input.buf + KB_INBUF_SIZE) {
+ 	kb_input.p_head = kb_input.buf;
+ 	}	
+ 	kb_input.count++;
+ 	}
 }
+
 
 /*
  * 如果内核的字符缓冲区为空，则返回-1
@@ -32,5 +41,16 @@ add_keyboard_buf(u8 ch)
 u8
 getch(void)
 {
+	if(kb_input.count>0)
+	{
+		u8 c=*(kb_input.p_tail);
+		kb_input.p_tail++;
+ 		if (kb_input.p_tail == kb_input.buf + KB_INBUF_SIZE) 
+		{
+			kb_input.p_tail = kb_input.buf;
+ 		}
+ 	kb_input.count--;
+	return c;
+	}
 	return -1;
 }

@@ -126,9 +126,9 @@ init_gate(GATE *p_gate, u8 desc_type, void *handler, u8 privilage)
 #define LDT_SIZE	GDT_SIZE
 #define IDT_SIZE	256
 
-DESCRIPTOR	gdt[GDT_SIZE];
-DESCRIPTOR	ldt[LDT_SIZE];
-GATE		idt[IDT_SIZE];
+extern DESCRIPTOR	gdt[GDT_SIZE];
+extern DESCRIPTOR	ldt[LDT_SIZE];
+extern GATE		idt[IDT_SIZE];
 
 /* TSS(Taskstate) */
 typedef struct s_tss {
@@ -163,7 +163,7 @@ typedef struct s_tss {
 }TSS;
 
 /* 全局的tss数据结构 */
-TSS tss;
+extern TSS tss;
 
 /* 描述符表 */
 struct Pseudodesc {
@@ -171,6 +171,6 @@ struct Pseudodesc {
 	u32 pd_base;		// Base address
 } __attribute__ ((packed));
 
-struct Pseudodesc gdt_ptr, idt_ptr;
+extern struct Pseudodesc gdt_ptr, idt_ptr;
 
 #endif /* MINIOS_PROTECT_H */

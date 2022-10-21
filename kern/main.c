@@ -6,7 +6,14 @@
 #include "type.h"
 #include "trap.h"
 #include "x86.h"
-
+#include "game.h"
+#define HZ 1000
+#define TIMER0 0x40 /* I/O port for timer channel 0 */
+#define TIMER_MODE 0x43 /* I/O port for timer mode control */
+#define RATE_GENERATOR 0x34 /* 00-11-010-0 :
+46 * Counter0 - LSB then MSB - rate generator - binary
+47 */
+#define TIMER_FREQ 1193182L/* clock frequency for timer in PC and AT */
 /*
  * 三个测试函数，用户进程的执行流
  */
@@ -45,15 +52,21 @@ void TestC()
 #define STACK_TOTSIZE		STACK_PREPROCESS * PCB_SIZE
 // 用户栈（直接在内核开一个临时数组充当）
 char process_stack[STACK_TOTSIZE];
+// 指向当前进程pcb的指针
+PROCESS *p_proc_ready;
+// pcb表
+PROCESS	proc_table[PCB_SIZE];
 void (*entry[]) = {
-	TestA,
-	TestB,
-	TestC,
+	startGame,
+	//TestA,
+	//TestB,
+	//TestC,
 };
 char pcb_name[][16] = {
-	"TestA",
-	"TestB",
-	"TestC",
+	"startGame",
+	//"TestA",
+	//"TestB",
+	//"TestC",
 };
 
 /*
@@ -61,7 +74,11 @@ char pcb_name[][16] = {
  * 用于初始化用户进程，然后将执行流交给用户进程
  */
 void kernel_main()
+
 {
+	outb(TIMER_MODE, RATE_GENERATOR);
+	outb(TIMER0, (u8) (TIMER_FREQ/HZ) );
+	outb(TIMER0, (u8) ((TIMER_FREQ/HZ) >> 8));
 	kprintf("---start kernel main---\n");
 
 	PROCESS *p_proc = proc_table;
@@ -91,7 +108,7 @@ void kernel_main()
 	p_proc_ready = proc_table;
 
 	enable_irq(CLOCK_IRQ);
-
+	enable_irq(KEYBOARD_IRQ);
 	restart();
 	assert(0);
 }

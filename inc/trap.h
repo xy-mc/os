@@ -20,6 +20,7 @@
 #define	AT_WINI_IRQ	14	/* at winchester */
 
 /* 一个用于标记是否有重入内核的标志 */
+extern int ticks;
 extern int k_reenter;
 
 /* 执行用户进程的入口(汇编接口) */
@@ -72,7 +73,7 @@ void	exception_handler(int vec_no, int err_code, int eip,
 /* 外设中断实际处理函数(C接口) */
 void	default_interrupt_handler(int irq);
 void	clock_interrupt_handler(int irq);
-
+void    keyboard_handler(int irq);
 /* 外设中断实际处理函数表 */
 extern void (*irq_table[])(int);
 

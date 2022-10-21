@@ -4,15 +4,16 @@
 #include "time.h"
 #include "trap.h"
 #include "x86.h"
-
+#include "keyboard.h"
+#include "keymap.h"
+int ticks;
 /*
  * 当前内核需要处理中断的数量
  */
 int k_reenter;
-
 void (*irq_table[16])(int) = {
 	clock_interrupt_handler,
-	default_interrupt_handler,
+	keyboard_handler,
 	default_interrupt_handler,
 	default_interrupt_handler,
 	default_interrupt_handler,
@@ -101,10 +102,26 @@ exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 void
 clock_interrupt_handler(int irq)
 {
-	kprintf("#");
+	ticks++;
 	timecounter_inc();
+	//kprintf("i%d",ticks);
+	/*if(p_proc_ready-proc_table==0)
+	{
+	   for(int i=0;i<5e6;i++)
+	    timecounter_inc();
+	}*/
 	p_proc_ready++;
 	if (p_proc_ready >= proc_table + PCB_SIZE) {
 		p_proc_ready = proc_table;
 	}
+}
+void
+keyboard_handler(int irq)
+{
+  u8 c = inb(0x60);
+  if((c>=0x10&&c<=0x19)||(c>=0x1E&&c<=0x26)||(c>=0x2C&&c<=0x32))
+  {
+     u8 s=keymap[c];
+     add_keyboard_buf(s);
+  }
 }
