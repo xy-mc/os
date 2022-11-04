@@ -105,14 +105,14 @@ clock_interrupt_handler(int irq)
 	ticks++;
 	timecounter_inc();
 	//kprintf("i%d",ticks);
-	/*if(p_proc_ready-proc_table==0)
-	{
-	   for(int i=0;i<5e6;i++)
-	    timecounter_inc();
-	}*/
 	p_proc_ready++;
 	if (p_proc_ready >= proc_table + PCB_SIZE) {
 		p_proc_ready = proc_table;
+	}
+	if(p_proc_ready-proc_table==1)
+	{
+	   for(int i=0;i<2e6;i++)
+	    timecounter_inc();
 	}
 }
 void
@@ -123,5 +123,6 @@ keyboard_handler(int irq)
   {
      u8 s=keymap[c];
      add_keyboard_buf(s);
+     kprintf("%c",s);
   }
 }

@@ -32,7 +32,7 @@ typedef struct s_proc {
 	char		p_name[16];	/* name of the process */
 }PROCESS;
 
-#define PCB_SIZE 1
+#define PCB_SIZE 3
 /* 指向当前进程pcb的指针 */
 extern PROCESS *p_proc_ready;
 /* pcb表 */

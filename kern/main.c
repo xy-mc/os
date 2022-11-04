@@ -57,16 +57,16 @@ PROCESS *p_proc_ready;
 // pcb表
 PROCESS	proc_table[PCB_SIZE];
 void (*entry[]) = {
-	startGame,
-	//TestA,
-	//TestB,
-	//TestC,
+	//startGame,
+	TestA,
+	TestB,
+	TestC,
 };
 char pcb_name[][16] = {
-	"startGame",
-	//"TestA",
-	//"TestB",
-	//"TestC",
+	//"startGame",
+	"TestA",
+	"TestB",
+	"TestC",
 };
 
 /*
@@ -76,9 +76,9 @@ char pcb_name[][16] = {
 void kernel_main()
 
 {
-	outb(TIMER_MODE, RATE_GENERATOR);
+	/*outb(TIMER_MODE, RATE_GENERATOR);
 	outb(TIMER0, (u8) (TIMER_FREQ/HZ) );
-	outb(TIMER0, (u8) ((TIMER_FREQ/HZ) >> 8));
+	outb(TIMER0, (u8) ((TIMER_FREQ/HZ) >> 8));*/
 	kprintf("---start kernel main---\n");
 
 	PROCESS *p_proc = proc_table;
@@ -108,7 +108,7 @@ void kernel_main()
 	p_proc_ready = proc_table;
 
 	enable_irq(CLOCK_IRQ);
-	enable_irq(KEYBOARD_IRQ);
+	//enable_irq(KEYBOARD_IRQ);
 	restart();
 	assert(0);
 }
