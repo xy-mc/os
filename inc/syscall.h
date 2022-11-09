@@ -6,5 +6,6 @@
 #define _NR_get_pid		1
 #define _NR_read		2
 #define _NR_write		3
-
+#define _NR_delay               4
 #endif /* MINIOS_SYSCALL_H */
+ssize_t delay_ticks(u32 ticks);

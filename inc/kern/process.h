@@ -59,7 +59,7 @@ typedef union u_proc {
 // kern/main.c
 extern PROCESS *p_proc_ready;
 /* pcb表 */
-#define PCB_SIZE	2
+#define PCB_SIZE	3
 // kern/main.c
 extern PROCESS	proc_table[];
 
@@ -72,4 +72,5 @@ void	switch_kern_context(
 // 处理函数
 void	schedule(void);
 u32	kern_get_pid(PROCESS *p_proc);
+ssize_t do_delay_ticks(u32 ticks);
 #endif /* MINIOS_KERN_PROCESS_H */

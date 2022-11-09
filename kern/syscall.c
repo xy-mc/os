@@ -9,12 +9,14 @@ static ssize_t sys_get_ticks(void);
 static ssize_t sys_get_pid(void);
 static ssize_t sys_read(void);
 static ssize_t sys_write(void);
+static ssize_t sys_delay_ticks(void);
 
 ssize_t (*syscall_table[])(void) = {
 [_NR_get_ticks]	sys_get_ticks,
 [_NR_get_pid]	sys_get_pid,
 [_NR_read]	sys_read,
 [_NR_write]	sys_write,
+[_NR_delay]     sys_delay_ticks
 };
 
 /*
@@ -42,6 +44,11 @@ get_arg(int order)
 	default:
 		panic("invalid order! order: %d", order);
 	}
+}
+//
+ssize_t sys_delay_ticks(void)
+{
+	return do_delay_ticks(get_arg(0));
 }
 /*
  * ssize_t get_ticks(void)

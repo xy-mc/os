@@ -102,3 +102,18 @@ do_get_pid(void)
 {
 	return (ssize_t)kern_get_pid(p_proc_ready);
 }
+
+
+ssize_t kern_delay_ticks(u32 ticks)
+{
+	// u32 old=kern_get_ticks();
+	// while(kern_get_ticks()<old+ticks)
+	// 	timecounter_inc();
+	p_proc_ready->pcb.ticks=ticks;
+	schedule();
+	return 0;
+}
+ssize_t do_delay_ticks(u32 ticks)
+{
+	return (ssize_t)kern_delay_ticks(ticks);
+}

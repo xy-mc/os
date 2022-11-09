@@ -3,11 +3,15 @@
 #include <mmu.h>
 #include <string.h>
 #include <x86.h>
+#include <type.h>
+#include <elf.h>
+#include <fat32.h>
 
 #include <kern/keyboard.h>
 #include <kern/fs.h>
 #include <kern/stdio.h>
 #include <kern/syscall.h>
+#include <kern/kmalloc.h>
 
 /*
  * 内核读入函数，由于没有文件描述符概念，
@@ -65,7 +69,8 @@ do_write(int fd, const void *buf, size_t count)
 }
 
 #define SECTSIZE	512
-
+#define BUF_ADDR	K_PHY2LIN(48 * MB)
+#define ELF_ADDR	K_PHY2LIN(48 * MB)
 static void
 waitdisk(void)
 {
@@ -91,14 +96,15 @@ readsect(void *dst, u32 offset)
 	waitdisk();
 
 	// read a sector
-	insl(0x1F0, dst, SECTSIZE/4);
+	insl(0x1F0, dst, SECTSIZE/4);//$
 }
 
 u32 fat_start_sec;
 u32 data_start_sec;
 u32 fat_now_sec;
 struct BPB bpb;
-
+u32 elf_clus;
+u32 elf_off;
 /*
  * 获取下一个簇号
  */
@@ -128,8 +134,43 @@ read_data_sec(void *dst, u32 current_clus)
 	current_clus += data_start_sec;
 
 	for (int i = 0 ; i < bpb.BPB_SecPerClus ; i++, dst += SECTSIZE)
-		readsect(dst, current_clus + i);
+		readsect(dst, current_clus + i);//$
 	return dst;
+}
+
+
+/*
+ * 根据输入的参数读取对应的一段，由于kernel.bin是正经ld链接的，所以文件偏移和
+ * 虚拟地址的增长速度相同，所以采取激进的读取策略，如果文件偏移不是4096对齐或
+ * 不能从当前的elf_clus推出到需要读取的簇号则直接默认为读取失败，
+ */
+void
+readseg(u32 va, u32 count, u32 offset)
+{
+	u32 end_va;
+
+	end_va = va + count;
+	if ((offset & (8 * SECTSIZE - 1)) != 0)
+		goto bad;
+	
+	if (offset < elf_off)
+		goto bad;
+	
+	while (va < end_va) {
+		if (elf_off == offset) {
+			read_data_sec((void *)va, elf_clus);//$
+			va += 8 * SECTSIZE;
+			offset += 8 * SECTSIZE;
+		}
+		elf_off += 8 * SECTSIZE;
+		elf_clus = get_next_clus(elf_clus);
+	}
+
+	return;
+bad:
+	panic("unimplement! readseg");	
+	while (1)
+		;// do nothing
 }
 
 /*
@@ -177,4 +218,110 @@ read_file(const char *filename, void *dst)
 		dst = read_data_sec(dst, file_clus);
 		file_clus = get_next_clus(file_clus);
 	}
+}
+//映射
+void ys_elf(phyaddr_t cr3,u32 ad_start,u32 ad_end)
+{
+	uintptr_t *pde_ptr = (uintptr_t *)K_PHY2LIN(cr3);
+	u32 *pde_ptr_start = pde_ptr+PDX(ad_start);
+	u32 *pde_ptr_end = pde_ptr+PDX(ad_end);
+	pde_ptr=pde_ptr_start;
+	while(pde_ptr<=pde_ptr_end)
+	{
+		u32 pte_phy;
+		//uintptr_t *pte_ptr;
+		if(((*pde_ptr)&PTE_P)==0)
+		{
+			pte_phy = phy_malloc_4k();
+			assert(PGOFF(pte_phy) == 0);
+			*pde_ptr = pte_phy | PTE_P | PTE_W | PTE_U;
+			//pte_ptr = (uintptr_t *)K_PHY2LIN(pte_phy);
+		}
+		else
+		{
+			pte_phy=(*pde_ptr);
+			//phyaddr_t pte_phy=((*pde_ptr)>>3)<<3;
+			//pte_ptr = (uintptr_t *)K_PHY2LIN(pte_phy);
+			//pde_ptr++;
+		}
+		u32 *pte_ptr=(u32 *)K_PHY2LIN(pte_phy);
+		u32 *pte_ptr_start;
+		u32 *pte_ptr_end;
+		if(pde_ptr>pde_ptr_start)
+		{
+			pte_ptr_start=pte_ptr+PTX(0);
+			//kprintf("a\n");
+		}
+		else
+		{
+			pte_ptr_start=pte_ptr+PTX(ad_start);
+			//kprintf("b\n");
+		}
+		if(pde_ptr<pde_ptr_end)
+		{
+			pte_ptr_end=pte_ptr+NPTENTRIES-1;
+			//kprintf("c\n");
+		}
+		else
+		{
+			pte_ptr_end=pte_ptr+PTX(ad_end);
+			//kprintf("d\n");
+		}
+		//pte_ptr=pte_ptr_start;
+		//kprintf("%x %x\n",pte_ptr_start,pde_ptr_end);
+		if(pte_ptr_start>pte_ptr_end)
+		{
+			u32 *t=pte_ptr_end;
+			pte_ptr_end=pte_ptr_start;
+			pte_ptr_start=t;
+			//kprintf("%x %x\n",pte_ptr_start,pde_ptr_end);
+		}
+		pte_ptr=pte_ptr_start;
+		//kprintf("%x %x\n",pte_ptr_start,pde_ptr_end);
+		while(pte_ptr<=pte_ptr_end)
+		{
+			//kprintf("%x %x\n",pte_ptr,pde_ptr_end);
+			if(((*pte_ptr)&PTE_P)==0)
+			{
+				//kprintf("%x %x\n",pte_ptr,pde_ptr_end);
+				phyaddr_t phy_addr=phy_malloc_4k();
+				//kprintf("%x\n",phy_addr);
+				*pte_ptr = phy_addr | PTE_P | PTE_W | PTE_U;
+			}
+			pte_ptr++;
+		}
+		pde_ptr++;
+	}
+}
+//加载elf文件
+void load_elf(u32 cr3)
+{
+	struct Elf *eh = (void *)ELF_ADDR;
+	struct Proghdr *ph = (void *)eh + eh->e_phoff;
+	u32 ad_start,ad_end;
+	ad_start=ph->p_va;
+	for(int i = 0 ; i < eh->e_phnum ; i++, ph++)
+	{
+		if (ph->p_type != PT_LOAD)
+			continue;
+		ad_end=ph->p_va+ph->p_memsz;
+	}
+	ys_elf(cr3,ad_start,ad_end);
+	ph = (void *)eh + eh->e_phoff;
+	for (int i = 0 ; i < eh->e_phnum ; i++, ph++) 
+	{
+		if (ph->p_type != PT_LOAD)
+			continue;
+		//ys_elf(cr3,ph->p_va,ph->p_va+ph->p_memsz-1);
+		//kprintf("%x %x\n",ph->p_va, ph->p_va+ph->p_memsz-1);
+		//if(i==1)panic("");
+		memcpy((void*)ph->p_va,(void*)eh+ph->p_offset,ph->p_filesz);
+		//if(i==1)panic("");
+		memset((void *)ph->p_va + ph->p_filesz, 
+		 	0, 
+		 	ph->p_memsz - ph->p_filesz);
+		//ys_elf(cr3,ph->p_va,ph->p_va+ph->p_filesz-1);
+	}
+	//panic("");
+	//((void (*)(void))(eh->e_entry))();
 }

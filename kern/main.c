@@ -3,6 +3,9 @@
 #include <string.h>
 #include <type.h>
 #include <x86.h>
+#include <elf.h>
+#include <fat32.h>
+
 
 #include <kern/fs.h>
 #include <kern/kmalloc.h>
@@ -12,6 +15,19 @@
 #include <kern/protect.h>
 #include <kern/trap.h>
 
+
+#define SECTSIZE	512
+#define ELF_ADDR	K_PHY2LIN(48 * MB)
+#define STACK_PREPROCESS	0x1000
+u32 stack_user=3*GB-1;
+u32 melloc_user(u32 cr3)
+{
+	u32 stack=stack_user;
+	stack_user-=STACK_PREPROCESS;
+	ys_elf(cr3,stack,stack_user);
+	return stack;
+}
+
 // 标志着内核是否处理完成
 bool init_kernel;
 
@@ -19,6 +35,7 @@ bool init_kernel;
 PROCESS *p_proc_ready;
 // pcb表
 PROCESS	proc_table[PCB_SIZE];
+
 
 static inline void
 init_segment_regs(PROCESS *p_proc)
@@ -58,23 +75,32 @@ void kernel_main(void)
 		// 就可以直接lcr3，于此同时执行流不会触发page fault
 		// 如果不先map_kern，执行流会发现执行的代码的线性地址不存在爆出Page Fault
 		// 当然选不选择看个人的想法，评价是都行，各有各的优缺点
-		// lcr3(p_proc->pcb.cr3);
+		lcr3(p_proc->pcb.cr3);
 		
 		static char filename[PCB_SIZE][12] = {
 			"TESTPID BIN",
 			"TESTKEY BIN",	
+			"DELAY   BIN"
 		};
 		// 从磁盘中将文件读出，需要注意的是要满足短目录项的文件名长度11，
 		// 前八个为文件名，后三个为后缀名，跟BootLoader做法一致
 		// 推荐将文件加载到3GB + 48MB处，应用程序保证不会有16MB那么大
 		read_file(filename[i], (void *)K_PHY2LIN(48 * MB));
 		// 现在你就需要将从磁盘中读出的ELF文件解析到用户进程的地址空间中
-		panic("unimplement! load elf file");
+		load_elf(p_proc->pcb.cr3);
+		//map_kern(p_proc->pcb.cr3);
+		//panic("unimplement! load elf file");
 		
 		// 上一个实验中，我们开栈是用内核中的一个数组临时充当栈
 		// 但是现在就不行了，用户是无法访问内核的地址空间（3GB ~ 3GB + 128MB）
 		// 需要你自行处理给用户分配用户栈。
-		panic("unimplement! init user stack and esp");
+		//u32 *p_stack=malloc(KB);
+		//u32 stack=0;
+		///p_proc->pcb.user_regs.esp=p_stack;
+		struct Elf *eh = (void *)ELF_ADDR;
+		p_proc->pcb.user_regs.eip = (u32)eh->e_entry;
+		p_proc->pcb.user_regs.esp = (u32)melloc_user(p_proc->pcb.cr3);
+		//panic("unimplement! init user stack and esp");
 		// 初始化用户寄存器
 		p_proc->pcb.user_regs.eflags = 0x1202; /* IF=1, IOPL=1 */
 		
@@ -95,7 +121,7 @@ void kernel_main(void)
 
 		// 初始化其余量
 		p_proc->pcb.pid = i;
-		static int priority_table[PCB_SIZE] = {1, 2};
+		static int priority_table[PCB_SIZE] = {1, 2, 3};
 		// priority 预计给每个进程分配的时间片
 		// ticks 进程剩余的进程片
 		p_proc->pcb.priority = p_proc->pcb.ticks = priority_table[i];

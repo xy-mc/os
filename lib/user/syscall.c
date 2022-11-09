@@ -1,5 +1,5 @@
 #include <user/syscall.h>
-
+#include <kern/time.h>
 // 第一个冒号区间：汇编命令
 // 第二个冒号区间：输出操作符扩展
 // "=a" 这条命令结束后将eax寄存器的值赋给ret变量
@@ -113,4 +113,9 @@ ssize_t
 write(int fd, const void *buf, size_t count)
 {
 	return syscall3(_NR_write, fd, (size_t)buf, count);
+}
+ssize_t 
+delay_ticks(u32 ticks)
+{
+	return syscall1(_NR_delay,ticks);
 }
