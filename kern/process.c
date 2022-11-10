@@ -107,7 +107,7 @@ do_get_pid(void)
  ssize_t kern_delay_ticks(u32 ticks)
  {
  	u32 old=kern_get_ticks();
- 	while(kern_get_ticks()<=old+ticks)
+ 	while(kern_get_ticks()<old+ticks)
 	{
  		// timecounter_inc();
 		// kprintf("%x %d",old,do_get_pid());
