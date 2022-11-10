@@ -8,7 +8,7 @@
 #include <kern/process.h>
 #include <kern/protect.h>
 #include <kern/syscall.h>
-
+#include <kern/time.h>
 /*
  * 这个函数是写给汇编函数用，
  * 在汇编函数调用save函数保存完用户寄存器上下文后，
@@ -104,15 +104,29 @@ do_get_pid(void)
 }
 
 
-ssize_t kern_delay_ticks(u32 ticks)
-{
-	// u32 old=kern_get_ticks();
-	// while(kern_get_ticks()<old+ticks)
+ ssize_t kern_delay_ticks(u32 ticks)
+ {
+ 	u32 old=kern_get_ticks();
+ 	while(kern_get_ticks()<=old+ticks)
+	{
+ 		// timecounter_inc();
+		// kprintf("%x %d",old,do_get_pid());
+		// p_proc_ready++;
+		// if (p_proc_ready >= proc_table + PCB_SIZE) {
+		// 	p_proc_ready = proc_table;
+		// }
+	}
+	//timecounter_inc();
+	// p_proc_ready->pcb.ticks=ticks;
+	// while (--p_proc_ready->pcb.ticks != 0) {
 	// 	timecounter_inc();
-	p_proc_ready->pcb.ticks=ticks;
-	schedule();
+	// 	//p_proc_ready->pcb.ticks = p_proc_ready->pcb.priority;
+	// 	schedule();
+	// }
+	// p_proc_ready->pcb.ticks = p_proc_ready->pcb.priority;
+	//clock_interrupt_handler(CLOCK_IRQ);
 	return 0;
-}
+ }
 ssize_t do_delay_ticks(u32 ticks)
 {
 	return (ssize_t)kern_delay_ticks(ticks);

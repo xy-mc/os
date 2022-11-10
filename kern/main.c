@@ -78,8 +78,10 @@ void kernel_main(void)
 		lcr3(p_proc->pcb.cr3);
 		
 		static char filename[PCB_SIZE][12] = {
-			"TESTPID BIN",
-			"TESTKEY BIN",	
+			//"TESTPID BIN",
+			//"TESTKEY BIN",	
+			"DELAY   BIN",
+			"DELAY   BIN",
 			"DELAY   BIN"
 		};
 		// 从磁盘中将文件读出，需要注意的是要满足短目录项的文件名长度11，
