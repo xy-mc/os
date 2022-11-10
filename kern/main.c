@@ -24,7 +24,7 @@ u32 melloc_user(u32 cr3)
 {
 	u32 stack=stack_user;
 	stack_user-=STACK_PREPROCESS;
-	ys_elf(cr3,stack,stack_user);
+	ys_elf(cr3,stack_user,stack);
 	return stack;
 }
 
