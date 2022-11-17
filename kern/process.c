@@ -2,7 +2,7 @@
 #include <mmu.h>
 #include <string.h>
 #include <x86.h>
-
+#include <kern/stdio.h>
 #include <kern/trap.h>
 #include <kern/pmap.h>
 #include <kern/process.h>
@@ -106,9 +106,12 @@ do_get_pid(void)
 
  ssize_t kern_delay_ticks(u32 ticks)
  {
- 	u32 old=kern_get_ticks();
- 	while(kern_get_ticks()<old+ticks)
+ 	u32 old=kern_get_ticks()+ticks-1;
+	//kprintf("%d--",old);
+ 	while(1)
 	{
+		if(kern_get_ticks()>=old)
+		return 0;
  		// timecounter_inc();
 		// kprintf("%x %d",old,do_get_pid());
 		// p_proc_ready++;
@@ -125,7 +128,7 @@ do_get_pid(void)
 	// }
 	// p_proc_ready->pcb.ticks = p_proc_ready->pcb.priority;
 	//clock_interrupt_handler(CLOCK_IRQ);
-	return 0;
+	//return 0;
  }
 ssize_t do_delay_ticks(u32 ticks)
 {
