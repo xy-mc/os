@@ -122,6 +122,7 @@ void kernel_main(void)
 		// 初始化其余量
 		p_proc->pcb.pid = i;
 		static int priority_table[PCB_SIZE] = {1, 2, 3};
+		//static int priority_table[PCB_SIZE] = {1, 1, 1};
 		// priority 预计给每个进程分配的时间片
 		// ticks 进程剩余的进程片
 		p_proc->pcb.priority = p_proc->pcb.ticks = priority_table[i];

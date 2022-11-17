@@ -104,33 +104,33 @@ do_get_pid(void)
 }
 
 
- ssize_t kern_delay_ticks(u32 ticks)
- {
- 	u32 old=kern_get_ticks()+ticks-1;
-	//kprintf("%d--",old);
- 	while(1)
-	{
-		if(kern_get_ticks()>=old)
-		return 0;
- 		// timecounter_inc();
-		// kprintf("%x %d",old,do_get_pid());
-		// p_proc_ready++;
-		// if (p_proc_ready >= proc_table + PCB_SIZE) {
-		// 	p_proc_ready = proc_table;
-		// }
-	}
-	//timecounter_inc();
-	// p_proc_ready->pcb.ticks=ticks;
-	// while (--p_proc_ready->pcb.ticks != 0) {
-	// 	timecounter_inc();
-	// 	//p_proc_ready->pcb.ticks = p_proc_ready->pcb.priority;
-	// 	schedule();
-	// }
-	// p_proc_ready->pcb.ticks = p_proc_ready->pcb.priority;
-	//clock_interrupt_handler(CLOCK_IRQ);
-	//return 0;
- }
-ssize_t do_delay_ticks(u32 ticks)
-{
-	return (ssize_t)kern_delay_ticks(ticks);
-}
+//  ssize_t kern_delay_ticks(u32 ticks)
+//  {
+//  	u32 old=kern_get_ticks()+ticks;
+// 	//kprintf("%d--",old);
+//  	while(1)
+// 	{
+// 		if(kern_get_ticks()>=old)
+// 		return 0;
+//  		// timecounter_inc();
+// 		// kprintf("%x %d",old,do_get_pid());
+// 		// p_proc_ready++;
+// 		// if (p_proc_ready >= proc_table + PCB_SIZE) {
+// 		// 	p_proc_ready = proc_table;
+// 		// }
+// 	}
+// 	//timecounter_inc();
+// 	// p_proc_ready->pcb.ticks=ticks;
+// 	// while (--p_proc_ready->pcb.ticks != 0) {
+// 	// 	timecounter_inc();
+// 	// 	//p_proc_ready->pcb.ticks = p_proc_ready->pcb.priority;
+// 	// 	schedule();
+// 	// }
+// 	// p_proc_ready->pcb.ticks = p_proc_ready->pcb.priority;
+// 	//clock_interrupt_handler(CLOCK_IRQ);
+// 	//return 0;
+//  }
+// ssize_t do_delay_ticks(u32 ticks)
+// {
+// 	return (ssize_t)kern_delay_ticks(ticks);
+// }
