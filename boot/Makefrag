@@ -1,0 +1,28 @@
+#
+# makefile的boot部分，
+# 将会导入到根目录的makefile文件
+#
+
+OBJDIRS 	+= boot
+
+LOADER_OBJS	:= $(OBJDIR)/boot/loader.o $(OBJDIR)/boot/loadkernel.o
+LOADER_LINKER	:= boot/linker.ld
+
+$(OBJDIR)/boot/%.o: boot/%.c $(OBJDIR)/.vars.CFLAGS
+	@echo + cc $<
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/boot/%.o: boot/%.asm
+	@echo + as obj $<
+	@mkdir -p $(@D)
+	@$(AS) -f elf -o $@ $<
+
+$(OBJDIR)/boot/boot.bin: boot/boot.asm
+	@echo + as bin $<
+	@mkdir -p $(@D)
+	@$(AS) -o $@ $<
+
+$(OBJDIR)/boot/loader.bin: $(LOADER_OBJS) $(LOADER_LINKER) $(OBJDIR)/.vars.LDFLAGS
+	@echo + ld $@
+	@$(LD) $(LDFLAGS) -s -T $(LOADER_LINKER) --oformat binary -o $@ $(LOADER_OBJS)
