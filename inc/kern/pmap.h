@@ -8,5 +8,9 @@ void	map_kern(u32 cr3, struct page_node **page_list);
 void	map_elf(PROCESS_0 *p_proc, void *elf_addr);
 void	map_stack(PROCESS_0 *p_proc);
 void	recycle_pages(struct page_node *page_list);
-
+void    lin_mapping_phy(u32			cr3,
+		struct page_node	**page_list,
+		uintptr_t		laddr,
+		phyaddr_t		paddr,
+		u32			pte_flag);
 #endif /* MINIOS_KERN_PMAP_H */

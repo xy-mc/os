@@ -30,7 +30,7 @@ alloc_phy_page(struct page_node **page_list)
  * 并将pte_flag置位到页表项（页目录项标志位默认为PTE_P | PTE_W | PTE_U）
  * 这个函数中所有新申请到的页面信息会存放到page_list这个链表中
  */
-static void
+void
 lin_mapping_phy(u32			cr3,
 		struct page_node	**page_list,
 		uintptr_t		laddr,
