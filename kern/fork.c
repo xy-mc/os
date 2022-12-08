@@ -48,6 +48,7 @@ lin_mapping_phy1(u32			cr3,
 		if ((pte_ptr[PTX(laddr)] & PTE_P) != 0)
 			return;
 		page_phy = alloc_phy_page(page_list);
+		// memcpy((void *)laddr,(void *)K_PHY2LIN(paddr),PGSIZE);
 		(*page_list)->laddr = laddr;
 		
 	} else {
@@ -62,6 +63,15 @@ lin_mapping_phy1(u32			cr3,
 		// *page_list = new_node;
 	}
 	pte_ptr[PTX(laddr)] = page_phy | pte_flag;
+}
+void init_segment_regs(PROCESS_0 *p_proc,PROCESS_0 *p_fa)
+{
+	p_proc->user_regs.cs = p_fa->user_regs.cs;
+	p_proc->user_regs.ds = p_fa->user_regs.ds;
+	p_proc->user_regs.es = p_fa->user_regs.es;
+	p_proc->user_regs.fs = p_fa->user_regs.fs;
+	p_proc->user_regs.ss = p_fa->user_regs.ss;
+	p_proc->user_regs.gs = p_fa->user_regs.gs;
 }
 ssize_t
 kern_fork(PROCESS_0 *p_fa)
@@ -81,7 +91,10 @@ kern_fork(PROCESS_0 *p_fa)
 	int i;
 	for(i=0;i<PCB_SIZE;i++)
 		if(proc_table[i].pcb.statu==IDLE)
+		{
 			p_proc_idle=proc_table+i;
+			break;
+		}
 	if(i==PCB_SIZE)
 		return -1;
 	// 再之后你需要做的是好好阅读一下pcb的数据结构，搞明白结构体中每个成员的语义
@@ -93,28 +106,48 @@ kern_fork(PROCESS_0 *p_fa)
 		schedule();
 	while (xchg(&p_proc->lock, 1) == 1)
 		schedule();
-	p_proc->kern_regs.esp = (u32)(p_proc_ready + 1) - 8;
-	// 保证切换内核栈后执行流进入的是restart函数。
-	*(u32 *)(p_proc->kern_regs.esp + 0) = (u32)restart;
-	// 这里是因为restart要用`pop esp`确认esp该往哪里跳。
-	*(u32 *)(p_proc->kern_regs.esp + 4) = (u32)p_proc;
+	// p_proc->kern_regs.esp = (u32)(p_proc_idle + 1) - 8;
+	// // 保证切换内核栈后执行流进入的是restart函数。
+	// *(u32 *)(p_proc->kern_regs.esp + 0) = (u32)restart;
+	// // 这里是因为restart要用`pop esp`确认esp该往哪里跳。
+	// *(u32 *)(p_proc->kern_regs.esp + 4) = (u32)p_proc;
 	//p_fa->pid=0;
 	p_proc->pid=pid++;
-	kprintf("%d\n",p_proc->pid);
+	//kprintf("%d\n",p_proc->pid);
 	//p_fa->pid=p_proc->pid;
 	p_proc->priority=p_fa->priority;
 	p_proc->ticks=p_fa->ticks;
+	// memset(&p_proc->user_regs, 0, sizeof(p_proc->user_regs));
+	// init_segment_regs(p_proc,p_fa);
+	// p_proc->user_regs.eflags = 0x1202; /* IF=1, IOPL=1 */
 	memcpy(&p_proc->user_regs, &p_fa->user_regs, sizeof(p_proc->user_regs));
+	//memcpy(&p_proc->kern_regs, &p_fa->kern_regs, sizeof(p_proc->kern_regs));
+	p_proc->kern_regs.esp = (u32)(p_proc_idle +1) - 8;
+	// 保证切换内核栈后执行流进入的是restart函数。
+	*(u32 *)(p_proc->kern_regs.esp + 0) = (u32)restart;
+	//*(u32 *)(p_proc->kern_regs.esp + 0) = *(u32*)(p_fa->user_regs.esp+0);
+	// 这里是因为restart要用`pop esp`确认esp该往哪里跳。
+	*(u32 *)(p_proc->kern_regs.esp + 4) = (u32)p_proc;
+	//*(u32 *)(p_proc->kern_regs.esp + 4) = *(u32*)(p_fa->user_regs.esp+4);
+	//p_fa->pid=0;
+	p_proc->user_regs.eax=0;
 	phyaddr_t new_cr3 = phy_malloc_4k();
 	memset((void *)K_PHY2LIN(new_cr3), 0, PGSIZE);
 	struct page_node *new_page_list = kmalloc(sizeof(struct page_node));
 	new_page_list->nxt = NULL;
-	new_page_list->paddr = new_cr3;
+	new_page_list->paddr = new_cr3; 
 	new_page_list->laddr = -1;
 	map_kern(new_cr3, &new_page_list);
 	DISABLE_INT();
-	p_proc->cr3=new_cr3;
-	p_proc->page_list=new_page_list;
+	struct page_node *old_page_list;
+	old_page_list = p_proc->page_list;
+	p_proc->cr3 = new_cr3;
+	p_proc->page_list = new_page_list;
+	lcr3(p_proc->cr3);
+	recycle_pages(old_page_list);
+	// p_proc->cr3=new_cr3;
+	// p_proc->page_list=new_page_list;
+	// lcr3(p_proc->cr3);
 	//panic("Unimplement! copy pcb?");
 	for(struct page_node *p=p_fa->page_list;p;p=p->nxt)
 	{
@@ -123,9 +156,10 @@ kern_fork(PROCESS_0 *p_fa)
 		struct page_node *new_list = kmalloc(sizeof(struct page_node));
 		new_list->nxt=NULL;
 		lin_mapping_phy1(new_cr3,&new_list,p->laddr,(phyaddr_t)-1,PTE_P | PTE_W | PTE_U);
+		memcpy((void *)p->laddr,(void *)K_PHY2LIN(p->paddr),PGSIZE);
 		p_proc->page_list->nxt=new_list;
 	}
-	lcr3(p_proc->cr3);
+	//lcr3(p_proc->cr3);
 	ENABLE_INT();
 	//panic("Unimplement! copy pcb?");
 	
@@ -143,13 +177,23 @@ kern_fork(PROCESS_0 *p_fa)
 	// 别忘了维护进程树，将这对父子进程关系添加进去
 	//panic("Unimplement! maintain process tree");
 	p_proc->fork_tree.p_fa=p_fa;
-	p_proc->fork_tree.sons = NULL;
+	//p_proc->fork_tree.sons = NULL;
 	struct son_node	*sons=kmalloc(sizeof (struct son_node));
-	sons->p_son=p_proc;
-	p_fa->fork_tree.sons->nxt->pre=sons;
-	sons->nxt=p_fa->fork_tree.sons->nxt;
-	p_fa->fork_tree.sons->nxt=sons;
-	sons->pre=p_fa->fork_tree.sons;
+	if(p_fa->fork_tree.sons == NULL)
+	{
+		sons->pre=NULL;
+		sons->nxt=NULL;
+		sons->p_son=p_proc;
+		p_fa->fork_tree.sons=sons;
+	}
+	else
+	{
+		sons->p_son=p_proc;
+		p_fa->fork_tree.sons->nxt->pre=sons;
+		sons->nxt=p_fa->fork_tree.sons->nxt;
+		p_fa->fork_tree.sons->nxt=sons;
+		sons->pre=p_fa->fork_tree.sons;
+	}
 	// 最后你需要将子进程的状态置为READY，说明fork已经好了，子进程准备就绪了
 	//panic("Unimplement! change status to READY");
 	p_proc->statu=READY;
@@ -157,9 +201,10 @@ kern_fork(PROCESS_0 *p_fa)
 	// 1. 上锁上了吗？所有临界情况都考虑到了吗？（永远要相信有各种奇奇怪怪的并发问题）
 	// 2. 所有错误情况都判断到了吗？错误情况怎么处理？（RTFM->`man 2 fork`）
 	// 3. 你写的代码真的符合fork语义吗？
-	panic("Unimplement! soul torture");
+	//panic("Unimplement! soul torture");
 free:
 	xchg(&p_proc->lock, 0);
+	//panic("Unimplement! soul torture");
 	xchg(&p_fa->lock, 0);
 	//return kern_get_pid(p_proc);
 	// if(p_proc_ready->pcb.pid==p_fa->pid)
@@ -167,6 +212,7 @@ free:
 	// else
 	// 	return 0;
 	return p_proc->pid;
+	// return 0;
 }
 
 ssize_t
