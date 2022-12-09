@@ -117,6 +117,7 @@ kern_fork(PROCESS_0 *p_fa)
 	//p_fa->pid=p_proc->pid;
 	p_proc->priority=p_fa->priority;
 	p_proc->ticks=p_fa->ticks;
+	//p_proc->exit_code=p_fa->exit_code;
 	// memset(&p_proc->user_regs, 0, sizeof(p_proc->user_regs));
 	// init_segment_regs(p_proc,p_fa);
 	// p_proc->user_regs.eflags = 0x1202; /* IF=1, IOPL=1 */
@@ -143,6 +144,7 @@ kern_fork(PROCESS_0 *p_fa)
 	old_page_list = p_proc->page_list;
 	p_proc->cr3 = new_cr3;
 	p_proc->page_list = new_page_list;
+	phyaddr_t r_cr3=rcr3();
 	lcr3(p_proc->cr3);
 	recycle_pages(old_page_list);
 	// p_proc->cr3=new_cr3;
@@ -156,10 +158,12 @@ kern_fork(PROCESS_0 *p_fa)
 		struct page_node *new_list = kmalloc(sizeof(struct page_node));
 		new_list->nxt=NULL;
 		lin_mapping_phy1(new_cr3,&new_list,p->laddr,(phyaddr_t)-1,PTE_P | PTE_W | PTE_U);
+		//kprintf("%x\n",p->laddr);
 		memcpy((void *)p->laddr,(void *)K_PHY2LIN(p->paddr),PGSIZE);
 		p_proc->page_list->nxt=new_list;
 	}
 	//lcr3(p_proc->cr3);
+	lcr3(r_cr3);
 	ENABLE_INT();
 	//panic("Unimplement! copy pcb?");
 	
@@ -212,7 +216,7 @@ free:
 	// else
 	// 	return 0;
 	return p_proc->pid;
-	// return 0;
+	//return 0;
 }
 
 ssize_t

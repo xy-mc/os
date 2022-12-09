@@ -7,23 +7,30 @@
 
 void test_fork_wait1(void)
 {
+	//printf("1\n");
 	ssize_t pid = fork();
-
+	//printf("???\n");
 	assert(pid >= 0);
-
+	//printf("???\n");
 	if (pid == 0)
+	{
 		exit(114);
-	
+		printf("??\n");
+	}
 	int wstatus;
+	//printf("???\n");
+	//printf("%d %d",pid,wait(&wstatus));
+	//while(1);
 	assert(pid == wait(&wstatus));
-
+	printf("???\n");
 	assert(WEXITSTATUS(wstatus) == 114);
-
+	// printf("???\n");
 	printf("\x1b[92mtest_fork_wait1 passed!\x1b[0m\n");
 }
 
 void test_fork_wait2(void)
 {
+	printf("2\n");
 	ssize_t pid = fork();
 
 	assert(pid >= 0);
@@ -38,6 +45,7 @@ void test_fork_wait2(void)
 
 void test_empty_wait(void)
 {
+	printf("3\n");
 	assert(wait(NULL) == -ECHILD);
 
 	printf("\x1b[92mtest_empty_wait passed!\x1b[0m\n");
@@ -45,6 +53,7 @@ void test_empty_wait(void)
 
 void test_fork_limit(void)
 {
+	printf("4\n");
 	int xor_sum = 0;
 
 	for (int i = 1 ; i <= 17 ; i++) {
@@ -72,6 +81,7 @@ void test_fork_limit(void)
 
 void test_wait_is_sleeping(void)
 {
+	printf("5\n");
 	ssize_t rt_pid = get_pid();
 
 	for (int i = 1 ; i <= 17 ; i++) {
@@ -106,6 +116,7 @@ void test_wait_is_sleeping(void)
 
 int main()
 {
+	printf("ok\n");
 	test_fork_wait1();
 	test_fork_wait2();
 	test_empty_wait();

@@ -6,10 +6,13 @@
 #include <kern/kmalloc.h>
 #include <kern/sche.h>
 #include <kern/trap.h>
-
+#define N 2100000
 static u32 phy_malloc_4k_lock;
+static u32 phy_free_4k_lock;
 static phyaddr_t phy_malloc_4k_p = 96 * MB;
 
+u32 q[N];
+int hh=0,tt=-1;
 /*
  * 释放物理页面，这里并没有为你实现好free_4k的代码，
  * 你需要自己实现一个数据结构用于维护释放的页面，
@@ -18,7 +21,12 @@ static phyaddr_t phy_malloc_4k_p = 96 * MB;
 void
 phy_free_4k(phyaddr_t paddr)
 {
+	// while(xchg(&phy_free_4k_lock, 1) == 1)
+	// 	schedule();
 	assert(paddr % PGSIZE == 0);
+	q[++tt]=paddr;
+// free:
+// 	xchg(&phy_malloc_4k_lock, 0);
 }
 /*
  * 分配物理页面，每次分配4kb，一页
@@ -29,10 +37,17 @@ phy_malloc_4k(void)
 {
 	while(xchg(&phy_malloc_4k_lock, 1) == 1)
 		schedule();
-	
-	assert(phy_malloc_4k_p < 128 * MB);
-	phyaddr_t paddr = phy_malloc_4k_p;
-	phy_malloc_4k_p += PGSIZE;
+	phyaddr_t paddr;
+	if(hh<=tt)
+	{
+		paddr=q[hh++];
+	}
+	else
+	{
+		assert(phy_malloc_4k_p < 128 * MB);
+		paddr = phy_malloc_4k_p;
+		phy_malloc_4k_p += PGSIZE;
+	}
 free:
 	xchg(&phy_malloc_4k_lock, 0);
 	return paddr;

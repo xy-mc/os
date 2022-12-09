@@ -69,17 +69,17 @@ struct tree_node {
 
 /* pcb */
 struct s_proc {
-	struct user_context	user_regs;//
-	struct kern_context	kern_regs;//
-	u32			lock;//
-	enum proc_statu		statu;//
-	u32			pid;//
-	phyaddr_t		cr3;//
+	struct user_context	user_regs;
+	struct kern_context	kern_regs;
+	u32			lock;
+	enum proc_statu		statu;
+	u32			pid;
+	phyaddr_t		cr3;
 	struct page_node	*page_list;
 	int			exit_code;
-	int			priority;//
-	int			ticks;//
-	struct tree_node	fork_tree;//
+	int			priority;
+	int			ticks;
+	struct tree_node	fork_tree;
 };
 
 #define KERN_STACKSIZE	(8 * KB)
