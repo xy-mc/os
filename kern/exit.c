@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <x86.h>
-
+#include <kern/stdio.h>
 #include <kern/exit.h>
 #include <kern/kmalloc.h>
 #include <kern/pmap.h>
@@ -36,7 +36,7 @@ loop:
 	assert(p_fa->statu == READY || p_fa->statu == SLEEP);
 	p_proc->statu = ZOMBIE;
 	p_fa->statu = READY;
-	
+	kprintf("%dexit\n",p_proc->pid);
 	xchg(&p_fa->lock, 0);
 	xchg(&p_proc->lock, 0);
 }
@@ -87,6 +87,7 @@ free:
 ssize_t
 kern_exit(PROCESS_0 *p_proc, int exit_code)
 {
+	kprintf("exit\n");
 	// 托孤，将所有子进程转移到初始进程下
 	transfer_orphans(p_proc);
 	

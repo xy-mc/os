@@ -41,8 +41,8 @@ kern_wait(int *wstatus)
 		return -1;
 	}
 	//p_proc->statu=SLEEP;
-	while(1)
-	{
+	// while(1)
+	// {
 		while(p_proc->statu==SLEEP)
 		{
 			schedule();
@@ -51,10 +51,13 @@ kern_wait(int *wstatus)
 		{
 			//kprintf("555\n");
 			PROCESS_0 *p_son = p->p_son;
-			struct son_node *p_nxt = p->nxt;
-			// 上子进程的锁，因为需要修改子进程的父进程信息（移到初始进程下）
 			while (xchg(&p_son->lock, 1) == 1)
 				schedule();
+			kprintf("--%d\n",p_son->pid);
+			struct son_node *p_nxt = p->nxt;
+			// 上子进程的锁，因为需要修改子进程的父进程信息（移到初始进程下）
+			// while (xchg(&p_son->lock, 1) == 1)
+			// 	schedule();
 			if(p_son->statu==ZOMBIE)
 			{
 				kprintf("111\n");
@@ -66,21 +69,38 @@ kern_wait(int *wstatus)
 				//memset(&p_proc->user_regs, 0, sizeof(p_proc->user_regs));
 				//memset(&p_proc->kern_regs, 0, sizeof(p_proc->kern_regs));
 				p_son->fork_tree.p_fa=NULL;
+				phyaddr_t r_cr3=rcr3();
+				lcr3(p_son->cr3);
 				recycle_pages(p_son->page_list);
+				lcr3(r_cr3);
 				p_son->page_list=NULL;
 				p_son->statu=IDLE;
+				*wstatus=p_son->exit_code;
 				ENABLE_INT();
 				xchg(&p_son->lock, 0);
 				xchg(&p_proc->lock, 0);
-				*wstatus=p_son->exit_code;
+				//*wstatus=p_son->exit_code;
 				return p_son->pid;
 			}
-			//kprintf("??\n");
+			kprintf("??\n");
 			xchg(&p_son->lock, 0);
+			//xchg(&p_proc->lock, 0);
 			p = p_nxt;
 		}
-		schedule();
-	}
+		p_proc->statu=SLEEP;
+		xchg(&p_proc->lock, 0);
+		// while(p_proc->statu==SLEEP)
+		// {
+		// 	schedule();
+		// }
+		//schedule();
+		while(1)
+		{
+			kprintf("nitian:%d\n",p_proc->statu);
+			xchg(&p_proc->lock, 0);
+			schedule();
+		}
+	// }
 	// 接下来就是你自己的实现了，我们在设计的时候这段代码不会有太大问题
 	// 在实现完后你任然要对自己来个灵魂拷问
 	// 1. 上锁上了吗？所有临界情况都考虑到了吗？（永远要相信有各种奇奇怪怪的并发问题）
@@ -88,6 +108,7 @@ kern_wait(int *wstatus)
 	// 3. 是否所有的资源都正确回收了？
 	// 4. 你写的代码真的符合wait语义吗？
 	//panic("Unimplement! soul torture");
+	kprintf("error:%d\n",p_proc->statu);
 	return 0;
 }
 

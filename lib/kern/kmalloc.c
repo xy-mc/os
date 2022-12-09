@@ -1,11 +1,12 @@
 #include <assert.h>
 #include <mmu.h>
 #include <x86.h>
-
+#include <string.h>
 #include <kern/stdio.h>
 #include <kern/kmalloc.h>
 #include <kern/sche.h>
 #include <kern/trap.h>
+#include <type.h>
 #define N 2100000
 static u32 phy_malloc_4k_lock;
 static u32 phy_free_4k_lock;
@@ -24,6 +25,7 @@ phy_free_4k(phyaddr_t paddr)
 	// while(xchg(&phy_free_4k_lock, 1) == 1)
 	// 	schedule();
 	assert(paddr % PGSIZE == 0);
+	//memset((void *)K_PHY2LIN(paddr), 0, PGSIZE);
 	q[++tt]=paddr;
 // free:
 // 	xchg(&phy_malloc_4k_lock, 0);

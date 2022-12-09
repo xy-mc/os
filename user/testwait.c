@@ -14,12 +14,14 @@ void test_fork_wait1(void)
 	//printf("???\n");
 	if (pid == 0)
 	{
+		printf("%d!!\n",pid);
 		exit(114);
 		printf("??\n");
 	}
 	int wstatus;
 	//printf("???\n");
 	//printf("%d %d",pid,wait(&wstatus));
+	printf("%d??\n",pid);
 	//while(1);
 	assert(pid == wait(&wstatus));
 	printf("???\n");
@@ -118,9 +120,9 @@ int main()
 {
 	printf("ok\n");
 	test_fork_wait1();
-	test_fork_wait2();
-	test_empty_wait();
-	test_fork_limit();
-	test_wait_is_sleeping();
+	//test_fork_wait2();
+	//test_empty_wait();
+	//test_fork_limit();
+	//test_wait_is_sleeping();
 	printf("\x1b[92mall tests passed!\x1b[0m\n");
 }

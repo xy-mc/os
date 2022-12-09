@@ -87,12 +87,19 @@ kern_fork(PROCESS_0 *p_fa)
 
 	// fork的第一步你需要找一个空闲（IDLE）的进程作为你要fork的子进程
 	//panic("Unimplement! find a idle process");
+	while (xchg(&p_fa->lock, 1) == 1)
+		schedule();
+	PROCESS_0 *p_proc;
 	PROCESS *p_proc_idle;
 	int i;
-	for(i=0;i<PCB_SIZE;i++)
+	for(i=1;i<PCB_SIZE;i++)
 		if(proc_table[i].pcb.statu==IDLE)
 		{
 			p_proc_idle=proc_table+i;
+			p_proc=&p_proc_idle->pcb;
+			while (xchg(&p_proc->lock, 1) == 1)
+				schedule();
+			//p_proc->statu=READY;
 			break;
 		}
 	if(i==PCB_SIZE)
@@ -101,11 +108,10 @@ kern_fork(PROCESS_0 *p_fa)
 	// 别光扫一遍，要搞明白这个成员到底在哪里被用到了，具体是怎么用的
 	// 可能exec和exit系统调用的代码能够帮助你对pcb的理解，不先理解好pcb你fork是无从下手的
 	//panic("Unimplement! read pcb");
-	PROCESS_0 *p_proc = &p_proc_idle->pcb;
-	while (xchg(&p_fa->lock, 1) == 1)
-		schedule();
-	while (xchg(&p_proc->lock, 1) == 1)
-		schedule();
+	//PROCESS_0 *p_proc = &p_proc_idle->pcb;
+	// while (xchg(&p_fa->lock, 1) == 1)
+	// 	schedule();
+	// PROCESS_0 *p_proc = &p_proc_idle->pcb;
 	// p_proc->kern_regs.esp = (u32)(p_proc_idle + 1) - 8;
 	// // 保证切换内核栈后执行流进入的是restart函数。
 	// *(u32 *)(p_proc->kern_regs.esp + 0) = (u32)restart;
@@ -132,6 +138,7 @@ kern_fork(PROCESS_0 *p_fa)
 	//*(u32 *)(p_proc->kern_regs.esp + 4) = *(u32*)(p_fa->user_regs.esp+4);
 	//p_fa->pid=0;
 	p_proc->user_regs.eax=0;
+	// DISABLE_INT();
 	phyaddr_t new_cr3 = phy_malloc_4k();
 	memset((void *)K_PHY2LIN(new_cr3), 0, PGSIZE);
 	struct page_node *new_page_list = kmalloc(sizeof(struct page_node));
@@ -185,6 +192,7 @@ kern_fork(PROCESS_0 *p_fa)
 	struct son_node	*sons=kmalloc(sizeof (struct son_node));
 	if(p_fa->fork_tree.sons == NULL)
 	{
+		kprintf("tt\n");
 		sons->pre=NULL;
 		sons->nxt=NULL;
 		sons->p_son=p_proc;
@@ -193,14 +201,23 @@ kern_fork(PROCESS_0 *p_fa)
 	else
 	{
 		sons->p_son=p_proc;
-		p_fa->fork_tree.sons->nxt->pre=sons;
-		sons->nxt=p_fa->fork_tree.sons->nxt;
-		p_fa->fork_tree.sons->nxt=sons;
-		sons->pre=p_fa->fork_tree.sons;
+		if(p_fa->fork_tree.sons->nxt!=NULL)
+		{
+			p_fa->fork_tree.sons->nxt->pre=sons;
+			sons->nxt=p_fa->fork_tree.sons->nxt;
+			p_fa->fork_tree.sons->nxt=sons;
+			sons->pre=p_fa->fork_tree.sons;
+		}
+		else
+		{
+			sons->nxt=NULL;
+			p_fa->fork_tree.sons->nxt=sons;
+			sons->pre=p_fa->fork_tree.sons;
+		}
 	}
 	// 最后你需要将子进程的状态置为READY，说明fork已经好了，子进程准备就绪了
 	//panic("Unimplement! change status to READY");
-	p_proc->statu=READY;
+	// p_proc->statu=READY;
 	// 在你写完fork代码时先别急着运行跑，先要对自己来个灵魂拷问
 	// 1. 上锁上了吗？所有临界情况都考虑到了吗？（永远要相信有各种奇奇怪怪的并发问题）
 	// 2. 所有错误情况都判断到了吗？错误情况怎么处理？（RTFM->`man 2 fork`）
