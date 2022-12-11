@@ -58,7 +58,7 @@ void test_fork_limit(void)
 	printf("4\n");
 	int xor_sum = 0;
 
-	for (int i = 1 ; i <= 19; i++) {
+	for (int i = 1 ; i <= 17; i++) {
 		ssize_t pid = fork();
 
 		assert(pid >= 0);
@@ -75,7 +75,7 @@ void test_fork_limit(void)
 	while ((wait_pid = wait(NULL)) >= 0)
 		wait_cnt++, xor_sum ^= wait_pid;
 	
-	assert(wait_cnt == 19);
+	assert(wait_cnt == 17);
 	assert(xor_sum == 0);
 	
 	printf("\x1b[92mtest_fork_limit passed!\x1b[0m\n");
@@ -93,7 +93,7 @@ void test_wait_is_sleeping(void)
 		assert(pid >= 0);
 		// printf("...\n");
 		//while(1);
-		printf("pid:%d\n",pid);
+		//printf("pid:%d\n",pid);
 		// while(1);
 		if (pid > 0) {
 			int wstatus;
@@ -128,10 +128,10 @@ void test_wait_is_sleeping(void)
 int main()
 {
 	printf("ok\n");
-	//test_fork_wait1();
-	//test_fork_wait2();
-	//test_empty_wait();
-	//test_fork_limit();
+	test_fork_wait1();
+	test_fork_wait2();
+	test_empty_wait();
+	test_fork_limit();
 	test_wait_is_sleeping();
 	printf("\x1b[92mall tests passed!\x1b[0m\n");
 }

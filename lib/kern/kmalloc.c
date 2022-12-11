@@ -7,7 +7,7 @@
 #include <kern/sche.h>
 #include <kern/trap.h>
 #include <type.h>
-#define N 2100000
+#define N 21000000
 static u32 phy_malloc_4k_lock;
 static u32 phy_free_4k_lock;
 static phyaddr_t phy_malloc_4k_p = 96 * MB;

@@ -40,12 +40,14 @@ void kernel_main(void)
 	p_proc->priority = p_proc->ticks = 1;
 	// 在实现了exec系统调用后main函数的负担就少了
 	// 只需要调用一个函数接口就能实现进程的加载
-	if (do_exec("initproc.bin") < 0)
-		panic("init process failed");
+	// if (do_exec("initproc.bin") < 0)
+	// 	panic("init process failed");
 	// if (do_exec("testfork.bin") < 0)
 	// 	panic("init process failed");
 	// if (do_exec("testwait.bin") < 0)
 	// 	panic("init process failed");
+	if (do_exec("forkbomb.bin") < 0)
+		panic("init process failed");
 	// 切换tss
 	tss.esp0 = (u32)(&p_proc->user_regs + 1);
 	lcr3(p_proc->cr3);

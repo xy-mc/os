@@ -45,12 +45,11 @@ kern_wait(int *wstatus)
 	// 	//kprintf("444\n");
 	// 	schedule();
 	// }
-	if(p_proc_ready->pcb.fork_tree.sons==NULL)
-	{
-		//kprintf("222\n");
-		xchg(&p_proc_ready->pcb.lock, 0);
-		return -ECHILD;
-	}
+	// if(p_proc_ready->pcb.fork_tree.sons==NULL)
+	// {
+	// 	xchg(&p_proc_ready->pcb.lock, 0);
+	// 	return -ECHILD;
+	// }
 	// xchg(&p_proc_ready->pcb.lock, 0);
 	//p_proc->statu=SLEEP;
 	PROCESS_0 *p_proc = &p_proc_ready->pcb;
@@ -64,9 +63,16 @@ kern_wait(int *wstatus)
 		{
 			schedule();
 		}
+		if(p_proc_ready->pcb.fork_tree.sons==NULL)
+		{
+			xchg(&p_proc_ready->pcb.lock, 0);
+			return -ECHILD;
+		}
 		for (struct son_node *p = p_proc->fork_tree.sons ; p ;) 
 		{
 			PROCESS_0 *p_son = p->p_son;
+			// for(int i=0;i<20;i++)
+			// 	kprintf("pid%d:%d\n",(proc_table+i)->pcb.pid,(proc_table+i)->pcb.lock);
 			while (xchg(&p_son->lock, 1) == 1)
 				schedule();
 			//kprintf("--%d\n",p_son->pid);
@@ -87,14 +93,14 @@ kern_wait(int *wstatus)
 					if (p->nxt != NULL)
 					{
 						p->nxt->pre = p->pre;
-						p->nxt=NULL;
+						//p->nxt=NULL;
 					}
 					// else
 					// 	p->pre->nxt=NULL;
 					if (p->pre != NULL)
 					{
 						p->pre->nxt = p->nxt;
-						p->pre=NULL;
+						//p->pre=NULL;
 					}
 					else
 						p_proc->fork_tree.sons=p->nxt;
@@ -102,11 +108,12 @@ kern_wait(int *wstatus)
 				//memset(&p_proc->user_regs, 0, sizeof(p_proc->user_regs));
 				//memset(&p_proc->kern_regs, 0, sizeof(p_proc->kern_regs));
 				p_son->fork_tree.p_fa=NULL;
-				phyaddr_t r_cr3=rcr3();
-				lcr3(p_son->cr3);
+				// phyaddr_t r_cr3=rcr3();
+				// lcr3(p_son->cr3);
 				recycle_pages(p_son->page_list);
-				lcr3(r_cr3);
-				p_son->page_list=NULL;
+				// lcr3(r_cr3);
+				//p_son->page_list=NULL;
+				kfree(p);
 				p_son->statu=IDLE;
 				ENABLE_INT();
 				xchg(&p_son->lock, 0);
@@ -121,11 +128,11 @@ kern_wait(int *wstatus)
 		//xchg(&p_proc->lock, 0);
 		p_proc->statu=SLEEP;
 		xchg(&p_proc->lock, 0);
-		while(p_proc->statu==SLEEP)
-		{
-			schedule();
-		}
-		// schedule();
+		// while(p_proc->statu==SLEEP)
+		// {
+		// 	schedule();
+		// }
+		schedule();
 		// while(1)
 		// {
 		// 	//kprintf("nitian:%d\n",p_proc->statu);

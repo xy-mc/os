@@ -100,6 +100,11 @@ kern_fork(PROCESS_0 *p_fa)
 			p_proc=&p_proc_idle->pcb;
 			while (xchg(&p_proc->lock, 1) == 1)
 				schedule();
+			if(proc_table[i].pcb.statu!=IDLE)
+			{
+				xchg(&p_proc->lock, 0);
+				continue;
+			}
 			//p_proc->statu=READY;
 			break;
 		}
@@ -155,14 +160,16 @@ kern_fork(PROCESS_0 *p_fa)
 	new_page_list->paddr = new_cr3; 
 	new_page_list->laddr = -1;
 	map_kern(new_cr3, &new_page_list);
-	DISABLE_INT();
-	struct page_node *old_page_list;
-	old_page_list = p_proc->page_list;
 	p_proc->cr3 = new_cr3;
-	p_proc->page_list = new_page_list;
-	phyaddr_t r_cr3=rcr3();
-	lcr3(p_proc->cr3);
-	recycle_pages(old_page_list);
+	p_proc->page_list=new_page_list;
+	DISABLE_INT();
+	// struct page_node *old_page_list;
+	// old_page_list = p_proc->page_list;
+	// p_proc->cr3 = new_cr3;
+	// p_proc->page_list = new_page_list;
+	// phyaddr_t r_cr3=rcr3();
+	// lcr3(p_proc->cr3);
+	// recycle_pages(old_page_list);
 	// p_proc->cr3=new_cr3;
 	// p_proc->page_list=new_page_list;
 	// lcr3(p_proc->cr3);
@@ -171,16 +178,16 @@ kern_fork(PROCESS_0 *p_fa)
 	{
 		if(p->laddr==-1)
 			continue;
-		struct page_node *new_list = kmalloc(sizeof(struct page_node));
-		new_list->nxt=NULL;
-		lin_mapping_phy1(new_cr3,&new_list,p->laddr,(phyaddr_t)-1,PTE_P | PTE_W | PTE_U);
+		//struct page_node *new_list = kmalloc(sizeof(struct page_node));
+		//new_list->nxt=NULL;
+		lin_mapping_phy(p_proc->cr3,&(p_proc->page_list),p->laddr,(phyaddr_t)-1,PTE_P | PTE_W | PTE_U);
 		// if(i==2)
 		// kprintf("%x\n",p->laddr);
-		memcpy((void *)p->laddr,(void *)K_PHY2LIN(p->paddr),PGSIZE);
-		p_proc->page_list->nxt=new_list;
+		memcpy((void *)K_PHY2LIN(p_proc->page_list->paddr),(void *)K_PHY2LIN(p->paddr),PGSIZE);
+		//p_proc->page_list->nxt=new_list;
 	}
 	//lcr3(p_proc->cr3);
-	lcr3(r_cr3);
+	// lcr3(r_cr3);
 	ENABLE_INT();
 	// if(i==2)
 	// while(1);
