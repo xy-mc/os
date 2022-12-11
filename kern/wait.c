@@ -12,6 +12,7 @@
 #include <kern/pmap.h>
 #include <kern/sche.h>
 #include <kern/stdio.h>
+#include <errno.h>
 ssize_t
 kern_wait(int *wstatus)
 {
@@ -27,45 +28,77 @@ kern_wait(int *wstatus)
 	// wait系统调用与exit系统调用关系密切，所以在实现wait之前需要先读一遍exit为好
 	// 可能读完exit的代码你可能知道wait该具体做什么了
 	//panic("Unimplement! Read The F**king Source Code");
-	PROCESS_0 *p_proc = &p_proc_ready->pcb;
-	//kprintf("333\n");
-	while (xchg(&p_proc->lock, 1) == 1)
+	// for(int i=0;i<20;i++)
+	// {
+	// 	kprintf("%d  %d\n",i,(proc_table+i)->pcb.lock);
+	// }
+	//xchg(&p_proc_ready->pcb.lock, 0);
+	while (xchg(&p_proc_ready->pcb.lock, 1) == 1)
 	{
-		//kprintf("444\n");
+		// kprintf("%d\n",p_proc_ready->pcb.pid);
 		schedule();
 	}
-	if(p_proc->fork_tree.sons==NULL)
-	{
-		kprintf("222\n");
-		xchg(&p_proc->lock, 0);
-		return -1;
-	}
-	//p_proc->statu=SLEEP;
-	// while(1)
+	//PROCESS_0 *p_proc = &p_proc_ready->pcb;
+	//kprintf("333\n");
+	// while (xchg(&p_proc->lock, 1) == 1)
 	// {
+	// 	//kprintf("444\n");
+	// 	schedule();
+	// }
+	if(p_proc_ready->pcb.fork_tree.sons==NULL)
+	{
+		//kprintf("222\n");
+		xchg(&p_proc_ready->pcb.lock, 0);
+		return -ECHILD;
+	}
+	// xchg(&p_proc_ready->pcb.lock, 0);
+	//p_proc->statu=SLEEP;
+	PROCESS_0 *p_proc = &p_proc_ready->pcb;
+	while(1)
+	{
+		// while (xchg(&p_proc->lock, 1) == 1)
+	   	// {
+	 	// 	schedule();
+	  	// }
 		while(p_proc->statu==SLEEP)
 		{
 			schedule();
 		}
 		for (struct son_node *p = p_proc->fork_tree.sons ; p ;) 
 		{
-			//kprintf("555\n");
 			PROCESS_0 *p_son = p->p_son;
 			while (xchg(&p_son->lock, 1) == 1)
 				schedule();
-			kprintf("--%d\n",p_son->pid);
+			//kprintf("--%d\n",p_son->pid);
 			struct son_node *p_nxt = p->nxt;
 			// 上子进程的锁，因为需要修改子进程的父进程信息（移到初始进程下）
 			// while (xchg(&p_son->lock, 1) == 1)
 			// 	schedule();
 			if(p_son->statu==ZOMBIE)
 			{
-				kprintf("111\n");
+				//kprintf("111\n");
 				DISABLE_INT();
-				if (p->nxt != NULL)
-					p->nxt->pre = p->pre;
-				if (p->pre != NULL)
-					p->pre->nxt = p->nxt;
+				if(wstatus!=NULL)
+					*wstatus=p_son->exit_code;
+				if(p->nxt==NULL&&p->pre==NULL)
+					p_proc->fork_tree.sons=NULL;
+				else
+				{
+					if (p->nxt != NULL)
+					{
+						p->nxt->pre = p->pre;
+						p->nxt=NULL;
+					}
+					// else
+					// 	p->pre->nxt=NULL;
+					if (p->pre != NULL)
+					{
+						p->pre->nxt = p->nxt;
+						p->pre=NULL;
+					}
+					else
+						p_proc->fork_tree.sons=p->nxt;
+				}
 				//memset(&p_proc->user_regs, 0, sizeof(p_proc->user_regs));
 				//memset(&p_proc->kern_regs, 0, sizeof(p_proc->kern_regs));
 				p_son->fork_tree.p_fa=NULL;
@@ -75,32 +108,31 @@ kern_wait(int *wstatus)
 				lcr3(r_cr3);
 				p_son->page_list=NULL;
 				p_son->statu=IDLE;
-				*wstatus=p_son->exit_code;
 				ENABLE_INT();
 				xchg(&p_son->lock, 0);
 				xchg(&p_proc->lock, 0);
-				//*wstatus=p_son->exit_code;
 				return p_son->pid;
 			}
-			kprintf("??\n");
+			//kprintf("??\n");
 			xchg(&p_son->lock, 0);
 			//xchg(&p_proc->lock, 0);
 			p = p_nxt;
 		}
+		//xchg(&p_proc->lock, 0);
 		p_proc->statu=SLEEP;
 		xchg(&p_proc->lock, 0);
-		// while(p_proc->statu==SLEEP)
-		// {
-		// 	schedule();
-		// }
-		//schedule();
-		while(1)
+		while(p_proc->statu==SLEEP)
 		{
-			kprintf("nitian:%d\n",p_proc->statu);
-			xchg(&p_proc->lock, 0);
 			schedule();
 		}
-	// }
+		// schedule();
+		// while(1)
+		// {
+		// 	//kprintf("nitian:%d\n",p_proc->statu);
+		// 	//xchg(&p_proc->lock, 0);
+		// 	schedule();
+		// }
+	}
 	// 接下来就是你自己的实现了，我们在设计的时候这段代码不会有太大问题
 	// 在实现完后你任然要对自己来个灵魂拷问
 	// 1. 上锁上了吗？所有临界情况都考虑到了吗？（永远要相信有各种奇奇怪怪的并发问题）
@@ -108,7 +140,7 @@ kern_wait(int *wstatus)
 	// 3. 是否所有的资源都正确回收了？
 	// 4. 你写的代码真的符合wait语义吗？
 	//panic("Unimplement! soul torture");
-	kprintf("error:%d\n",p_proc->statu);
+	//kprintf("error:%d\n",p_proc->statu);
 	return 0;
 }
 

@@ -9,6 +9,7 @@
 #include <kern/pmap.h>
 #include <kern/sche.h>
 #include <kern/stdio.h>
+#include <errno.h>
 u32 pid=1;
 phyaddr_t
 alloc_phy_page(struct page_node **page_list)
@@ -103,7 +104,15 @@ kern_fork(PROCESS_0 *p_fa)
 			break;
 		}
 	if(i==PCB_SIZE)
-		return -1;
+	{
+		xchg(&p_fa->lock, 0);
+		return -EAGAIN;
+	}
+	// if(i==2)
+	// kprintf("2\n");
+	// if(i==3)
+	// kprintf("3\n");
+	// if(i!=1&&i!=2)while(1);
 	// 再之后你需要做的是好好阅读一下pcb的数据结构，搞明白结构体中每个成员的语义
 	// 别光扫一遍，要搞明白这个成员到底在哪里被用到了，具体是怎么用的
 	// 可能exec和exit系统调用的代码能够帮助你对pcb的理解，不先理解好pcb你fork是无从下手的
@@ -165,13 +174,16 @@ kern_fork(PROCESS_0 *p_fa)
 		struct page_node *new_list = kmalloc(sizeof(struct page_node));
 		new_list->nxt=NULL;
 		lin_mapping_phy1(new_cr3,&new_list,p->laddr,(phyaddr_t)-1,PTE_P | PTE_W | PTE_U);
-		//kprintf("%x\n",p->laddr);
+		// if(i==2)
+		// kprintf("%x\n",p->laddr);
 		memcpy((void *)p->laddr,(void *)K_PHY2LIN(p->paddr),PGSIZE);
 		p_proc->page_list->nxt=new_list;
 	}
 	//lcr3(p_proc->cr3);
 	lcr3(r_cr3);
 	ENABLE_INT();
+	// if(i==2)
+	// while(1);
 	//panic("Unimplement! copy pcb?");
 	
 	// 在阅读完pcb之后终于可以开始fork工作了
@@ -192,7 +204,8 @@ kern_fork(PROCESS_0 *p_fa)
 	struct son_node	*sons=kmalloc(sizeof (struct son_node));
 	if(p_fa->fork_tree.sons == NULL)
 	{
-		kprintf("tt\n");
+		// kprintf("tt\n");
+		// while(1);
 		sons->pre=NULL;
 		sons->nxt=NULL;
 		sons->p_son=p_proc;
@@ -200,6 +213,8 @@ kern_fork(PROCESS_0 *p_fa)
 	}
 	else
 	{
+		// kprintf("....\n");
+		// 	while(1);
 		sons->p_son=p_proc;
 		if(p_fa->fork_tree.sons->nxt!=NULL)
 		{
@@ -210,6 +225,8 @@ kern_fork(PROCESS_0 *p_fa)
 		}
 		else
 		{
+			// kprintf("....\n");
+			// while(1);
 			sons->nxt=NULL;
 			p_fa->fork_tree.sons->nxt=sons;
 			sons->pre=p_fa->fork_tree.sons;
@@ -217,7 +234,7 @@ kern_fork(PROCESS_0 *p_fa)
 	}
 	// 最后你需要将子进程的状态置为READY，说明fork已经好了，子进程准备就绪了
 	//panic("Unimplement! change status to READY");
-	// p_proc->statu=READY;
+	p_proc->statu=READY;
 	// 在你写完fork代码时先别急着运行跑，先要对自己来个灵魂拷问
 	// 1. 上锁上了吗？所有临界情况都考虑到了吗？（永远要相信有各种奇奇怪怪的并发问题）
 	// 2. 所有错误情况都判断到了吗？错误情况怎么处理？（RTFM->`man 2 fork`）

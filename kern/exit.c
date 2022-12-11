@@ -36,7 +36,7 @@ loop:
 	assert(p_fa->statu == READY || p_fa->statu == SLEEP);
 	p_proc->statu = ZOMBIE;
 	p_fa->statu = READY;
-	kprintf("%dexit\n",p_proc->pid);
+	
 	xchg(&p_fa->lock, 0);
 	xchg(&p_proc->lock, 0);
 }
@@ -82,12 +82,13 @@ transfer_orphans(PROCESS_0 *p_proc)
 free:
 	xchg(&p_proc->lock, 0);
 	xchg(&p_init->lock, 0);
+	//kprintf("xiasuo\n");
 }
 
 ssize_t
 kern_exit(PROCESS_0 *p_proc, int exit_code)
 {
-	kprintf("exit\n");
+	//kprintf("exit!\n");
 	// 托孤，将所有子进程转移到初始进程下
 	transfer_orphans(p_proc);
 	

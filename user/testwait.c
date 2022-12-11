@@ -7,24 +7,24 @@
 
 void test_fork_wait1(void)
 {
-	//printf("1\n");
+	printf("1\n");
 	ssize_t pid = fork();
 	//printf("???\n");
 	assert(pid >= 0);
 	//printf("???\n");
 	if (pid == 0)
 	{
-		printf("%d!!\n",pid);
+		//printf("%d!!\n",pid);
 		exit(114);
-		printf("??\n");
+		//printf("??\n");
 	}
 	int wstatus;
 	//printf("???\n");
 	//printf("%d %d",pid,wait(&wstatus));
-	printf("%d??\n",pid);
+	//printf("%d??\n",pid);
 	//while(1);
 	assert(pid == wait(&wstatus));
-	printf("???\n");
+	//printf("???\n");
 	assert(WEXITSTATUS(wstatus) == 114);
 	// printf("???\n");
 	printf("\x1b[92mtest_fork_wait1 passed!\x1b[0m\n");
@@ -58,14 +58,14 @@ void test_fork_limit(void)
 	printf("4\n");
 	int xor_sum = 0;
 
-	for (int i = 1 ; i <= 17 ; i++) {
+	for (int i = 1 ; i <= 19; i++) {
 		ssize_t pid = fork();
 
 		assert(pid >= 0);
 
 		if (pid == 0)
 			exit(0);
-		
+		//printf("pid%d:%d\n",i,pid);
 		xor_sum ^= pid;
 	}
 
@@ -75,7 +75,7 @@ void test_fork_limit(void)
 	while ((wait_pid = wait(NULL)) >= 0)
 		wait_cnt++, xor_sum ^= wait_pid;
 	
-	assert(wait_cnt == 17);
+	assert(wait_cnt == 19);
 	assert(xor_sum == 0);
 	
 	printf("\x1b[92mtest_fork_limit passed!\x1b[0m\n");
@@ -83,24 +83,33 @@ void test_fork_limit(void)
 
 void test_wait_is_sleeping(void)
 {
-	printf("5\n");
+	//printf("5\n");
 	ssize_t rt_pid = get_pid();
-
+	// printf("%d\n",rt_pid);
+	// while(1);
 	for (int i = 1 ; i <= 17 ; i++) {
 		ssize_t pid = fork();
 
 		assert(pid >= 0);
-		
+		// printf("...\n");
+		//while(1);
+		printf("pid:%d\n",pid);
+		// while(1);
 		if (pid > 0) {
 			int wstatus;
+			// printf("...\n");
+			// while(1);
 			assert(pid == wait(&wstatus));
 			assert(WEXITSTATUS(wstatus) == 42);
 			if (get_pid() != rt_pid)
 				exit(42);
 			break;
 		}
+		// printf("...\n");
+		// 	while(1);
 	}
-
+	// printf("...\n");		
+	// while(1);
 	if (get_pid() != rt_pid) {
 		ssize_t la_ticks = get_ticks();
 		
@@ -119,10 +128,10 @@ void test_wait_is_sleeping(void)
 int main()
 {
 	printf("ok\n");
-	test_fork_wait1();
+	//test_fork_wait1();
 	//test_fork_wait2();
 	//test_empty_wait();
 	//test_fork_limit();
-	//test_wait_is_sleeping();
+	test_wait_is_sleeping();
 	printf("\x1b[92mall tests passed!\x1b[0m\n");
 }
