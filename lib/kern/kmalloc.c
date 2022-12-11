@@ -22,10 +22,11 @@ int hh=0,tt=-1;
 void
 phy_free_4k(phyaddr_t paddr)
 {
-	// while(xchg(&phy_free_4k_lock, 1) == 1)
+	// while(xchg(&phy_malloc_4k_lock, 1) == 1)
 	// 	schedule();
 	assert(paddr % PGSIZE == 0);
 	//memset((void *)K_PHY2LIN(paddr), 0, PGSIZE);
+	assert(tt<N-1);
 	q[++tt]=paddr;
 // free:
 // 	xchg(&phy_malloc_4k_lock, 0);
@@ -40,6 +41,7 @@ phy_malloc_4k(void)
 	while(xchg(&phy_malloc_4k_lock, 1) == 1)
 		schedule();
 	phyaddr_t paddr;
+	assert(hh<N-1);
 	if(hh<=tt)
 	{
 		paddr=q[hh++];

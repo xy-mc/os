@@ -32,12 +32,12 @@ kern_wait(int *wstatus)
 	// {
 	// 	kprintf("%d  %d\n",i,(proc_table+i)->pcb.lock);
 	// }
-	//xchg(&p_proc_ready->pcb.lock, 0);
-	while (xchg(&p_proc_ready->pcb.lock, 1) == 1)
-	{
-		// kprintf("%d\n",p_proc_ready->pcb.pid);
-		schedule();
-	}
+	// //xchg(&p_proc_ready->pcb.lock, 0);
+	// while (xchg(&p_proc_ready->pcb.lock, 1) == 1)
+	// {
+	// 	// kprintf("%d\n",p_proc_ready->pcb.pid);
+	// 	schedule();
+	// }
 	//PROCESS_0 *p_proc = &p_proc_ready->pcb;
 	//kprintf("333\n");
 	// while (xchg(&p_proc->lock, 1) == 1)
@@ -52,80 +52,100 @@ kern_wait(int *wstatus)
 	// }
 	// xchg(&p_proc_ready->pcb.lock, 0);
 	//p_proc->statu=SLEEP;
+	//PROCESS_0 *p_proc = &p_proc_ready->pcb;
 	PROCESS_0 *p_proc = &p_proc_ready->pcb;
+	while (xchg(&p_proc->lock, 1) == 1)
+	{
+		// kprintf("%d\n",p_proc_ready->pcb.pid);
+		schedule();
+	}
+	if(p_proc->fork_tree.sons==NULL)
+	{
+		xchg(&p_proc->lock, 0);
+		return -ECHILD;
+	}
 	while(1)
 	{
+		// PROCESS_0 *p_proc = &p_proc_ready->pcb;
+		// while (xchg(&p_proc_ready->pcb.lock, 1) == 1)
+		// {
+		// // kprintf("%d\n",p_proc_ready->pcb.pid);
+		// 	schedule();
+		// }
+		// PROCESS_0 *p_proc = &p_proc_ready->pcb;
 		// while (xchg(&p_proc->lock, 1) == 1)
 	   	// {
 	 	// 	schedule();
 	  	// }
-		while(p_proc->statu==SLEEP)
-		{
-			schedule();
-		}
-		if(p_proc_ready->pcb.fork_tree.sons==NULL)
-		{
-			xchg(&p_proc_ready->pcb.lock, 0);
-			return -ECHILD;
-		}
+		// while(p_proc->statu==SLEEP)
+		// {
+		// 	schedule();
+		// }
+		// if(p_proc_ready->pcb.fork_tree.sons==NULL)
+		// {
+		// 	xchg(&p_proc->lock, 0);
+		// 	return -ECHILD;
+		// }
 		for (struct son_node *p = p_proc->fork_tree.sons ; p ;) 
 		{
-			PROCESS_0 *p_son = p->p_son;
+			// PROCESS_0 *p_son = p->p_son;
 			// for(int i=0;i<20;i++)
 			// 	kprintf("pid%d:%d\n",(proc_table+i)->pcb.pid,(proc_table+i)->pcb.lock);
-			while (xchg(&p_son->lock, 1) == 1)
-				schedule();
+			// while (xchg(&p->p_son->lock, 1) == 1)
+			// 	schedule();
+			PROCESS_0 *p_son = p->p_son;
 			//kprintf("--%d\n",p_son->pid);
 			struct son_node *p_nxt = p->nxt;
 			// 上子进程的锁，因为需要修改子进程的父进程信息（移到初始进程下）
-			// while (xchg(&p_son->lock, 1) == 1)
-			// 	schedule();
+			while (xchg(&p_son->lock, 1) == 1)
+				schedule();
 			if(p_son->statu==ZOMBIE)
 			{
 				//kprintf("111\n");
 				DISABLE_INT();
-				if(wstatus!=NULL)
-					*wstatus=p_son->exit_code;
+				// if(wstatus!=NULL)
+				// 	*wstatus=p_son->exit_code;
 				if(p->nxt==NULL&&p->pre==NULL)
 					p_proc->fork_tree.sons=NULL;
+				else if(p->nxt!=NULL&&p->pre==NULL)
+				{
+					p->nxt->pre=NULL;
+					p_proc->fork_tree.sons=p->nxt;
+				}
+				else if(p->nxt==NULL&&p->pre!=NULL)
+				{
+					p->pre->nxt=NULL;
+				}
 				else
 				{
-					if (p->nxt != NULL)
-					{
-						p->nxt->pre = p->pre;
-						//p->nxt=NULL;
-					}
-					// else
-					// 	p->pre->nxt=NULL;
-					if (p->pre != NULL)
-					{
-						p->pre->nxt = p->nxt;
-						//p->pre=NULL;
-					}
-					else
-						p_proc->fork_tree.sons=p->nxt;
+					p->nxt->pre=p->pre;
+					p->pre->nxt=p->nxt;
 				}
 				//memset(&p_proc->user_regs, 0, sizeof(p_proc->user_regs));
 				//memset(&p_proc->kern_regs, 0, sizeof(p_proc->kern_regs));
 				p_son->fork_tree.p_fa=NULL;
+				//p_proc->fork_tree.sons=NULL;
 				// phyaddr_t r_cr3=rcr3();
 				// lcr3(p_son->cr3);
 				recycle_pages(p_son->page_list);
 				// lcr3(r_cr3);
-				//p_son->page_list=NULL;
-				kfree(p);
+				p_son->page_list=NULL;
+				//kfree(p);
 				p_son->statu=IDLE;
 				ENABLE_INT();
+				if(wstatus!=NULL)
+					*wstatus=p_son->exit_code;
 				xchg(&p_son->lock, 0);
 				xchg(&p_proc->lock, 0);
 				return p_son->pid;
 			}
 			//kprintf("??\n");
 			xchg(&p_son->lock, 0);
-			//xchg(&p_proc->lock, 0);
+			xchg(&p_proc->lock, 0);
 			p = p_nxt;
 		}
 		//xchg(&p_proc->lock, 0);
+		DISABLE_INT();
 		p_proc->statu=SLEEP;
 		xchg(&p_proc->lock, 0);
 		// while(p_proc->statu==SLEEP)
@@ -133,6 +153,7 @@ kern_wait(int *wstatus)
 		// 	schedule();
 		// }
 		schedule();
+		ENABLE_INT();
 		// while(1)
 		// {
 		// 	//kprintf("nitian:%d\n",p_proc->statu);

@@ -90,19 +90,17 @@ kern_fork(PROCESS_0 *p_fa)
 	//panic("Unimplement! find a idle process");
 	while (xchg(&p_fa->lock, 1) == 1)
 		schedule();
-	PROCESS_0 *p_proc;
-	PROCESS *p_proc_idle;
+	PROCESS *p_proc_idle=proc_table;
+	// DISABLE_INT();
 	int i;
-	for(i=1;i<PCB_SIZE;i++)
+	for(i=0;i<PCB_SIZE;i++,p_proc_idle++)
 		if(proc_table[i].pcb.statu==IDLE)
 		{
-			p_proc_idle=proc_table+i;
-			p_proc=&p_proc_idle->pcb;
-			while (xchg(&p_proc->lock, 1) == 1)
+			while (xchg(&p_proc_idle->pcb.lock, 1) == 1)
 				schedule();
-			if(proc_table[i].pcb.statu!=IDLE)
+			if(p_proc_idle->pcb.statu!=IDLE)
 			{
-				xchg(&p_proc->lock, 0);
+				xchg(&p_proc_idle->pcb.lock, 0);
 				continue;
 			}
 			//p_proc->statu=READY;
@@ -132,6 +130,8 @@ kern_fork(PROCESS_0 *p_fa)
 	// // 这里是因为restart要用`pop esp`确认esp该往哪里跳。
 	// *(u32 *)(p_proc->kern_regs.esp + 4) = (u32)p_proc;
 	//p_fa->pid=0;
+	PROCESS_0 *p_proc=&p_proc_idle->pcb;
+	DISABLE_INT();
 	p_proc->pid=pid++;
 	//kprintf("%d\n",p_proc->pid);
 	//p_fa->pid=p_proc->pid;
@@ -141,6 +141,7 @@ kern_fork(PROCESS_0 *p_fa)
 	// memset(&p_proc->user_regs, 0, sizeof(p_proc->user_regs));
 	// init_segment_regs(p_proc,p_fa);
 	// p_proc->user_regs.eflags = 0x1202; /* IF=1, IOPL=1 */
+	// DISABLE_INT();
 	memcpy(&p_proc->user_regs, &p_fa->user_regs, sizeof(p_proc->user_regs));
 	//memcpy(&p_proc->kern_regs, &p_fa->kern_regs, sizeof(p_proc->kern_regs));
 	p_proc->kern_regs.esp = (u32)(p_proc_idle +1) - 8;
@@ -152,7 +153,6 @@ kern_fork(PROCESS_0 *p_fa)
 	//*(u32 *)(p_proc->kern_regs.esp + 4) = *(u32*)(p_fa->user_regs.esp+4);
 	//p_fa->pid=0;
 	p_proc->user_regs.eax=0;
-	// DISABLE_INT();
 	phyaddr_t new_cr3 = phy_malloc_4k();
 	memset((void *)K_PHY2LIN(new_cr3), 0, PGSIZE);
 	struct page_node *new_page_list = kmalloc(sizeof(struct page_node));
@@ -162,7 +162,7 @@ kern_fork(PROCESS_0 *p_fa)
 	map_kern(new_cr3, &new_page_list);
 	p_proc->cr3 = new_cr3;
 	p_proc->page_list=new_page_list;
-	DISABLE_INT();
+	// DISABLE_INT();
 	// struct page_node *old_page_list;
 	// old_page_list = p_proc->page_list;
 	// p_proc->cr3 = new_cr3;
@@ -188,7 +188,7 @@ kern_fork(PROCESS_0 *p_fa)
 	}
 	//lcr3(p_proc->cr3);
 	// lcr3(r_cr3);
-	ENABLE_INT();
+	// ENABLE_INT();
 	// if(i==2)
 	// while(1);
 	//panic("Unimplement! copy pcb?");
@@ -209,35 +209,42 @@ kern_fork(PROCESS_0 *p_fa)
 	p_proc->fork_tree.p_fa=p_fa;
 	//p_proc->fork_tree.sons = NULL;
 	struct son_node	*sons=kmalloc(sizeof (struct son_node));
+	sons->p_son=p_proc;
 	if(p_fa->fork_tree.sons == NULL)
 	{
 		// kprintf("tt\n");
 		// while(1);
 		sons->pre=NULL;
 		sons->nxt=NULL;
-		sons->p_son=p_proc;
 		p_fa->fork_tree.sons=sons;
 	}
 	else
 	{
 		// kprintf("....\n");
 		// 	while(1);
-		sons->p_son=p_proc;
-		if(p_fa->fork_tree.sons->nxt!=NULL)
-		{
-			p_fa->fork_tree.sons->nxt->pre=sons;
-			sons->nxt=p_fa->fork_tree.sons->nxt;
-			p_fa->fork_tree.sons->nxt=sons;
-			sons->pre=p_fa->fork_tree.sons;
-		}
-		else
-		{
-			// kprintf("....\n");
-			// while(1);
-			sons->nxt=NULL;
-			p_fa->fork_tree.sons->nxt=sons;
-			sons->pre=p_fa->fork_tree.sons;
-		}
+		sons->pre = NULL;
+		sons->nxt = p_fa->fork_tree.sons;
+		p_fa->fork_tree.sons->pre = sons;
+		p_fa->fork_tree.sons = sons;
+		// if(p_fa->fork_tree.sons->nxt!=NULL)
+		// {
+		// 	p_fa->fork_tree.sons->nxt->pre=sons;
+		// 	sons->nxt=p_fa->fork_tree.sons->nxt;
+		// 	p_fa->fork_tree.sons->nxt=sons;
+		// 	sons->pre=p_fa->fork_tree.sons;
+		// 	// sons->pre=NULL;
+		// 	// sons->nxt=p_fa->fork_tree.sons;
+		// 	// p_fa->fork_tree.sons->pre=sons;
+		// 	// p_fa->fork_tree.sons=sons;
+		// }
+		// else
+		// {
+		// 	// kprintf("....\n");
+		// 	// while(1);
+		// 	sons->nxt=NULL;
+		// 	p_fa->fork_tree.sons->nxt=sons;
+		// 	sons->pre=p_fa->fork_tree.sons;
+		// }
 	}
 	// 最后你需要将子进程的状态置为READY，说明fork已经好了，子进程准备就绪了
 	//panic("Unimplement! change status to READY");
@@ -251,6 +258,7 @@ free:
 	xchg(&p_proc->lock, 0);
 	//panic("Unimplement! soul torture");
 	xchg(&p_fa->lock, 0);
+	ENABLE_INT();
 	//return kern_get_pid(p_proc);
 	// if(p_proc_ready->pcb.pid==p_fa->pid)
 	// 	return p_proc->pid;
