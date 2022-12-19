@@ -130,7 +130,7 @@ kern_wait(int *wstatus)
 				recycle_pages(p_son->page_list);
 				// lcr3(r_cr3);
 				p_son->page_list=NULL;
-				//kfree(p);
+				kfree(p);
 				p_son->statu=IDLE;
 				ENABLE_INT();
 				if(wstatus!=NULL)

@@ -131,7 +131,7 @@ kern_fork(PROCESS_0 *p_fa)
 	// *(u32 *)(p_proc->kern_regs.esp + 4) = (u32)p_proc;
 	//p_fa->pid=0;
 	PROCESS_0 *p_proc=&p_proc_idle->pcb;
-	DISABLE_INT();
+	// DISABLE_INT();
 	p_proc->pid=pid++;
 	//kprintf("%d\n",p_proc->pid);
 	//p_fa->pid=p_proc->pid;
@@ -160,6 +160,7 @@ kern_fork(PROCESS_0 *p_fa)
 	new_page_list->paddr = new_cr3; 
 	new_page_list->laddr = -1;
 	map_kern(new_cr3, &new_page_list);
+	DISABLE_INT();
 	p_proc->cr3 = new_cr3;
 	p_proc->page_list=new_page_list;
 	// DISABLE_INT();
@@ -186,6 +187,7 @@ kern_fork(PROCESS_0 *p_fa)
 		memcpy((void *)K_PHY2LIN(p_proc->page_list->paddr),(void *)K_PHY2LIN(p->paddr),PGSIZE);
 		//p_proc->page_list->nxt=new_list;
 	}
+	ENABLE_INT();
 	//lcr3(p_proc->cr3);
 	// lcr3(r_cr3);
 	// ENABLE_INT();
@@ -258,7 +260,7 @@ free:
 	xchg(&p_proc->lock, 0);
 	//panic("Unimplement! soul torture");
 	xchg(&p_fa->lock, 0);
-	ENABLE_INT();
+	// ENABLE_INT();
 	//return kern_get_pid(p_proc);
 	// if(p_proc_ready->pcb.pid==p_fa->pid)
 	// 	return p_proc->pid;
