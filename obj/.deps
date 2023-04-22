@@ -1,0 +1,84 @@
+obj/user/initproc.o: user/initproc.c /usr/include/stdc-predef.h \
+ inc/assert.h inc/user/stdio.h inc/stdio.h inc/type.h inc/stdarg.h \
+ inc/user/syscall.h inc/syscall.h
+obj/boot/loadkernel.o: boot/loadkernel.c /usr/include/stdc-predef.h \
+ inc/type.h inc/elf.h inc/fat32.h inc/x86.h
+obj/kern/sche.o: kern/sche.c /usr/include/stdc-predef.h inc/x86.h \
+ inc/type.h inc/kern/process.h inc/mmu.h inc/kern/protect.h \
+ inc/kern/trap.h
+obj/kern/syscall.o: kern/syscall.c /usr/include/stdc-predef.h \
+ inc/assert.h inc/kern/fs.h inc/type.h inc/kern/process.h inc/mmu.h \
+ inc/kern/syscall.h inc/syscall.h inc/kern/time.h
+obj/kern/time.o: kern/time.c /usr/include/stdc-predef.h inc/type.h \
+ inc/kern/syscall.h inc/syscall.h inc/kern/time.h
+obj/kern/main.o: kern/main.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/x86.h inc/type.h inc/kern/stdio.h inc/stdio.h inc/stdarg.h \
+ inc/kern/syscall.h inc/syscall.h inc/kern/protect.h inc/kern/process.h \
+ inc/mmu.h inc/kern/trap.h
+obj/user/forkbomb.o: user/forkbomb.c /usr/include/stdc-predef.h \
+ inc/user/stdio.h inc/stdio.h inc/type.h inc/stdarg.h inc/user/syscall.h \
+ inc/syscall.h
+obj/user/testkey.o: user/testkey.c /usr/include/stdc-predef.h \
+ inc/assert.h inc/user/stdio.h inc/stdio.h inc/type.h inc/stdarg.h \
+ inc/user/syscall.h inc/syscall.h
+obj/kern/kmalloc.o: kern/kmalloc.c /usr/include/stdc-predef.h \
+ inc/assert.h inc/mmu.h inc/type.h inc/kern/kmalloc.h inc/kern/trap.h
+obj/user/shell.o: user/shell.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/string.h inc/type.h inc/user/stdio.h inc/stdio.h inc/stdarg.h \
+ inc/user/wait.h inc/user/syscall.h inc/syscall.h
+obj/user/testwait.o: user/testwait.c /usr/include/stdc-predef.h \
+ inc/assert.h inc/errno.h inc/user/stdio.h inc/stdio.h inc/type.h \
+ inc/stdarg.h inc/user/syscall.h inc/syscall.h inc/user/wait.h
+obj/user/testpid.o: user/testpid.c /usr/include/stdc-predef.h \
+ inc/assert.h inc/user/stdio.h inc/stdio.h inc/type.h inc/stdarg.h \
+ inc/user/syscall.h inc/syscall.h
+obj/kern/fs.o: kern/fs.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/errno.h inc/fat32.h inc/type.h inc/mmu.h inc/string.h inc/x86.h \
+ inc/kern/keyboard.h inc/kern/fs.h inc/kern/stdio.h inc/stdio.h \
+ inc/stdarg.h inc/kern/syscall.h inc/syscall.h
+obj/kern/pmap.o: kern/pmap.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/elf.h inc/type.h inc/string.h inc/mmu.h inc/kern/kmalloc.h \
+ inc/kern/pmap.h inc/kern/process.h
+obj/kern/wait.o: kern/wait.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/mmu.h inc/type.h inc/x86.h inc/string.h inc/kern/syscall.h \
+ inc/syscall.h inc/kern/wait.h inc/kern/process.h inc/kern/fork.h \
+ inc/kern/trap.h inc/kern/kmalloc.h inc/kern/pmap.h inc/kern/sche.h \
+ inc/kern/stdio.h inc/stdio.h inc/stdarg.h inc/errno.h
+obj/kern/start.o: kern/start.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/mmu.h inc/type.h inc/x86.h inc/kern/protect.h inc/kern/stdio.h \
+ inc/stdio.h inc/stdarg.h inc/kern/trap.h
+obj/user/delay.o: user/delay.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/user/stdio.h inc/stdio.h inc/type.h inc/stdarg.h inc/user/syscall.h \
+ inc/syscall.h
+obj/kern/exec.o: kern/exec.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/errno.h inc/elf.h inc/type.h inc/string.h inc/x86.h inc/kern/fs.h \
+ inc/kern/exec.h inc/kern/process.h inc/mmu.h inc/kern/kmalloc.h \
+ inc/kern/pmap.h inc/kern/protect.h inc/kern/sche.h inc/kern/syscall.h \
+ inc/syscall.h inc/kern/trap.h
+obj/lib/string.o: lib/string.c /usr/include/stdc-predef.h inc/string.h \
+ inc/type.h
+obj/kern/keyboard.o: kern/keyboard.c /usr/include/stdc-predef.h \
+ inc/type.h inc/x86.h inc/kern/keymap.h inc/kern/trap.h
+obj/kern/fork.o: kern/fork.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/string.h inc/type.h inc/x86.h inc/kern/fork.h inc/kern/process.h \
+ inc/mmu.h inc/kern/syscall.h inc/syscall.h inc/kern/trap.h \
+ inc/kern/kmalloc.h inc/kern/pmap.h inc/kern/sche.h inc/kern/stdio.h \
+ inc/stdio.h inc/stdarg.h inc/errno.h
+obj/lib/printfmt.o: lib/printfmt.c /usr/include/stdc-predef.h inc/type.h \
+ inc/stdio.h inc/stdarg.h inc/string.h
+obj/kern/exit.o: kern/exit.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/x86.h inc/type.h inc/kern/stdio.h inc/stdio.h inc/stdarg.h \
+ inc/kern/exit.h inc/kern/process.h inc/mmu.h inc/kern/kmalloc.h \
+ inc/kern/pmap.h inc/kern/sche.h inc/kern/syscall.h inc/syscall.h \
+ inc/kern/trap.h
+obj/kern/process.o: kern/process.c /usr/include/stdc-predef.h inc/x86.h \
+ inc/type.h inc/kern/process.h inc/mmu.h inc/kern/sche.h \
+ inc/kern/syscall.h inc/syscall.h
+obj/user/testfork.o: user/testfork.c /usr/include/stdc-predef.h \
+ inc/user/stdio.h inc/stdio.h inc/type.h inc/stdarg.h inc/user/syscall.h \
+ inc/syscall.h
+obj/kern/trap.o: kern/trap.c /usr/include/stdc-predef.h inc/assert.h \
+ inc/x86.h inc/type.h inc/kern/keyboard.h inc/kern/keymap.h \
+ inc/kern/process.h inc/mmu.h inc/kern/protect.h inc/kern/sche.h \
+ inc/kern/stdio.h inc/stdio.h inc/stdarg.h inc/kern/syscall.h \
+ inc/syscall.h inc/kern/time.h inc/kern/trap.h
